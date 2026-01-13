@@ -1,57 +1,63 @@
-# Resonance - Project Status
+# Resonance - Task Queue
 
-**Last Updated:** 2025-01-13
-**Phase:** 1 of 7 (Foundation)
-**Next Task:** Issue #2 - Configure Supabase
-
----
-
-## ✅ Completed
-
-### Issue #1: Next.js Setup ✅
-- Next.js 14 + TypeScript + Tailwind
-- AI West design system in globals.css
-- Supabase client/server/middleware
-- UI components (Button, Card, Input, Label, Badge)
-- Complete landing page
-- CLAUDE.md for handoff
+**Last Updated:** 2025-01-13 by Claude.ai
+**Current Phase:** 1 - Foundation (Issues #1-7)
 
 ---
 
-## 🔨 Current: Issue #2 - Supabase Setup
+## 📋 TASK QUEUE (Claude Code: Do These)
 
-**Blocker:** Need Josh to confirm $10/mo for new Supabase project
+### Next Up
+- [ ] **BLOCKED** Create Supabase project (waiting on Josh to approve $10/mo)
 
-Once confirmed:
-1. Create project in us-west-1 region
-2. Run migrations from `docs/DATABASE_SCHEMA.md`
-3. Create storage buckets
-4. Update `.env.local` with real credentials
-
----
-
-## 📋 Remaining Phase 1
-
-| # | Task | Status |
-|---|------|--------|
-| 2 | Supabase setup | 🔨 Blocked (cost approval) |
-| 3 | Auth pages | ⏳ |
-| 4 | Multi-tenant orgs | ⏳ |
-| 5 | Stripe webhooks | ⏳ |
-| 6 | Deploy to Vercel | ⏳ |
-| 7 | Polish landing | ⏳ |
-
----
-
-## 🚀 For Claude Code
-
-1. Read `CLAUDE.md` for full context
-2. Check GitHub issues: https://github.com/joshmartin1186/resonance/issues
-3. All specs in `docs/` folder
-4. Update this file after work
+### Once Supabase is approved:
+- [ ] Create Supabase project named "resonance" in us-west-1
+- [ ] Run organizations table migration (see docs/DATABASE_SCHEMA.md)
+- [ ] Run users table migration
+- [ ] Run projects table migration
+- [ ] Run project_footage table migration
+- [ ] Run generations table migration
+- [ ] Run system_logs table migration
+- [ ] Run user_preferences table migration
+- [ ] Run all RLS policies
+- [ ] Run helper functions (increment_generation_count, reset_monthly_usage)
+- [ ] Run all indexes
+- [ ] Create storage bucket: audio-uploads
+- [ ] Create storage bucket: footage-uploads
+- [ ] Get Supabase URL and keys, update .env.local
+- [ ] Test: run `npm run dev` and verify no Supabase errors
+- [ ] Comment on GitHub Issue #2 that it's complete
+- [ ] Close GitHub Issue #2
 
 ---
 
-## Environment
+## ✅ COMPLETED
 
-`.env.local` exists with placeholders. Replace with real values after Supabase project created.
+### 2025-01-13 (Claude.ai)
+- [x] Initialize Next.js 14 with TypeScript + Tailwind
+- [x] Install dependencies (Supabase, Stripe, lucide-react, etc.)
+- [x] Configure AI West design system in globals.css
+- [x] Create UI components (Button, Card, Input, Label, Badge)
+- [x] Build complete landing page
+- [x] Set up Supabase client/server/middleware with graceful fallback
+- [x] Create CLAUDE.md and STATUS.md for handoff
+- [x] Push to GitHub, close Issue #1
+
+---
+
+## 📝 NOTES FOR CLAUDE CODE
+
+- When you complete a task, mark it [x] and add date/attribution
+- If blocked, note why and move on to next unblocked task
+- Check docs/DATABASE_SCHEMA.md for exact SQL to run
+- Check docs/AI_WEST_DESIGN_SYSTEM.md for any styling (copy exactly)
+- Push to GitHub after completing logical chunks of work
+- If something is unclear, leave a note here and continue with other tasks
+
+---
+
+## 🚧 BLOCKERS
+
+| Blocker | Waiting On | Added |
+|---------|------------|-------|
+| Supabase project creation | Josh to approve $10/mo | 2025-01-13 |
