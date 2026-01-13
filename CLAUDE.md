@@ -20,8 +20,9 @@ npm run dev                 # Start dev server
 1. **Read STATUS.md** - Find your task list under "TASK QUEUE"
 2. **Execute tasks** - Build what's listed, in order
 3. **Mark complete** - Change `- [ ]` to `- [x]` with date
-4. **Push often** - `git add -A && git commit -m "msg" && git push`
-5. **Note blockers** - Add to BLOCKERS table if stuck, move to next task
+4. **Keep building** - Don't stop, don't wait, just build the next task
+5. **Don't push** - Build locally until Josh says "push to GitHub"
+6. **Note blockers** - If truly stuck, add to BLOCKERS table and move to next task
 
 ---
 
@@ -32,11 +33,16 @@ src/
 ├── app/                    # Pages (Next.js App Router)
 │   ├── globals.css         # AI West design system (DO NOT MODIFY)
 │   ├── page.tsx            # Landing page
-│   ├── login/              # Build these
+│   ├── login/              # Auth pages
 │   ├── signup/
-│   └── dashboard/
+│   ├── dashboard/
+│   ├── settings/
+│   ├── projects/
+│   └── pricing/
 ├── components/ui/          # Button, Card, Input, etc.
-├── lib/supabase/           # Supabase clients (already set up)
+├── lib/
+│   ├── supabase/           # Supabase clients
+│   └── stripe.ts           # Stripe utilities
 └── middleware.ts           # Auth middleware
 ```
 
@@ -58,13 +64,14 @@ src/
 1. **AI West Design System** - Never change colors/fonts. Copy from docs.
 2. **Multi-tenant** - Every query includes organization_id
 3. **Update STATUS.md** - Mark tasks [x] when done
-4. **Push often** - Commit after each logical chunk
+4. **Build locally** - Don't push until Josh says to
+5. **Keep moving** - Don't wait for manual steps, build everything you can
 
 ---
 
 ## Environment
 
-`.env.local` has real Supabase credentials. If you need new keys (Stripe, etc.), add to BLOCKERS.
+`.env.local` has Supabase credentials. Stripe keys will be added by Josh later.
 
 ---
 
@@ -73,8 +80,7 @@ src/
 1. Check the relevant doc in `/docs`
 2. Look at existing code patterns in `src/`
 3. Add note to STATUS.md under BLOCKERS
-4. Move to next unblocked task
-5. Josh or Claude.ai will help
+4. **Move to next task immediately** - don't wait
 
 ---
 
@@ -84,7 +90,11 @@ src/
 npm run dev          # Start dev server (localhost:3000)
 npm run build        # Check for build errors
 git pull             # Get latest before starting
-git add -A && git commit -m "description" && git push   # Save work
+```
+
+When Josh says "push":
+```bash
+git add -A && git commit -m "description" && git push
 ```
 
 ---
@@ -93,8 +103,10 @@ git add -A && git commit -m "description" && git push   # Save work
 
 **Supabase:** Connected and working
 **Database:** All tables created with RLS
-**Auth:** Not implemented yet (your next tasks)
-**Stripe:** Not connected yet
+**Auth:** Built (login, signup, reset-password)
+**Dashboard:** Built
+**Settings:** Built with org/billing/team tabs
+**Stripe:** Code built, waiting for Josh to create products in Stripe Dashboard
 
 ---
 
