@@ -8,21 +8,41 @@
 
 ```bash
 cd /Users/joshuamartin/Projects/resonance
-git pull                    # Get latest
+git pull                    # Get latest from GitHub (source of truth)
 cat STATUS.md               # See your tasks
-npm run dev                 # Start dev server
+npm run dev                 # Start dev server at localhost:3000
 ```
 
 ---
 
-## Your Workflow
+## The Workflow
 
-1. **Read STATUS.md** - Find your task list under "TASK QUEUE"
-2. **Execute tasks** - Build what's listed, in order
-3. **Mark complete** - Change `- [ ]` to `- [x]` with date
-4. **Keep building** - Don't stop, don't wait, just build the next task
-5. **Don't push** - Build locally until Josh says "push to GitHub"
-6. **Note blockers** - If truly stuck, add to BLOCKERS table and move to next task
+**GitHub is the source of truth. Test locally. Push when it works.**
+
+```
+1. git pull                     # Get latest
+2. Read STATUS.md               # Find your tasks
+3. Build code                   # Create/edit files
+4. npm run dev                  # Test at localhost:3000 (instant feedback)
+5. npm run build                # Catch TypeScript errors (10-30 sec)
+6. Mark task [x] in STATUS.md   # When working
+7. git push                     # When feature complete + builds clean
+```
+
+**Key point:** Never wait for Vercel. Local testing catches errors in seconds. Vercel is for production, not development.
+
+---
+
+## Testing Checklist
+
+Before pushing any feature:
+
+```bash
+npm run dev          # Does it work at localhost:3000?
+npm run build        # Does it compile without errors?
+```
+
+If both pass → push. If either fails → fix first.
 
 ---
 
@@ -40,9 +60,11 @@ src/
 │   ├── projects/
 │   └── pricing/
 ├── components/ui/          # Button, Card, Input, etc.
+├── contexts/               # React contexts (organization, etc.)
 ├── lib/
 │   ├── supabase/           # Supabase clients
-│   └── stripe.ts           # Stripe utilities
+│   ├── stripe.ts           # Stripe utilities
+│   └── rbac.ts             # Role-based access control
 └── middleware.ts           # Auth middleware
 ```
 
@@ -61,11 +83,12 @@ src/
 
 ## The Rules
 
-1. **AI West Design System** - Never change colors/fonts. Copy from docs.
-2. **Multi-tenant** - Every query includes organization_id
-3. **Update STATUS.md** - Mark tasks [x] when done
-4. **Build locally** - Don't push until Josh says to
-5. **Keep moving** - Don't wait for manual steps, build everything you can
+1. **GitHub is truth** - Always `git pull` before starting
+2. **Test locally** - Use `npm run dev`, not Vercel deploys
+3. **Build before push** - Run `npm run build` to catch errors
+4. **AI West Design System** - Never change colors/fonts
+5. **Multi-tenant** - Every query includes organization_id
+6. **Update STATUS.md** - Mark tasks [x] when done
 
 ---
 
@@ -84,28 +107,28 @@ src/
 
 ---
 
-## Common Commands
+## Commands Reference
 
 ```bash
-npm run dev          # Start dev server (localhost:3000)
-npm run build        # Check for build errors
-git pull             # Get latest before starting
-```
+# Daily workflow
+git pull                                              # Start here
+npm run dev                                           # Test at localhost:3000
+npm run build                                         # Check for errors
+git add -A && git commit -m "description" && git push # Save when clean
 
-When Josh says "push":
-```bash
-git add -A && git commit -m "description" && git push
+# Debugging
+npm run lint                 # Check code style
 ```
 
 ---
 
 ## Current State
 
-**Supabase:** Connected and working
-**Database:** All tables created with RLS
-**Auth:** Built (login, signup, reset-password)
-**Dashboard:** Built
-**Settings:** Built with org/billing/team tabs
+**Supabase:** Connected and working  
+**Database:** All tables created with RLS  
+**Auth:** Built (login, signup, reset-password)  
+**Dashboard:** Built  
+**Settings:** Built with org/billing/team tabs  
 **Stripe:** Code built, waiting for Josh to create products in Stripe Dashboard
 
 ---
