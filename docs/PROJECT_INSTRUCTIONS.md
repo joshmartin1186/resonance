@@ -18,7 +18,46 @@
 |------|-----|------------------|
 | **Product Owner** | Josh | Approves costs, makes decisions, nudges progress, tests features |
 | **Manager** | Claude.ai | Plans work, writes tasks, reviews progress, updates GitHub, removes blockers |
-| **IC (Builder)** | Claude Code | Executes tasks, writes code locally, marks tasks complete |
+| **IC (Builder)** | Claude Code | Executes tasks, writes code, tests locally, pushes when clean |
+
+---
+
+## The Workflow
+
+### Source of Truth
+
+**GitHub is the source of truth.** Local is for testing. Vercel is for production.
+
+```
+GitHub (source of truth)
+    ↓ git pull
+Local machine (testing - instant feedback)
+    ↓ npm run dev → localhost:3000
+    ↓ npm run build → catches errors
+    ↓ git push (only when it works)
+GitHub → Vercel auto-deploys (production, not dev cycle)
+```
+
+### Why This Works
+
+| Method | Feedback time |
+|--------|---------------|
+| `npm run dev` | Instant (hot reload) |
+| `npm run build` | 10-30 seconds |
+| Vercel deploy | 1-3 minutes |
+
+**Never wait for Vercel during development.** Local testing catches 99% of issues instantly.
+
+### The Build Loop
+
+```bash
+git pull                     # 1. Get latest from GitHub
+# Build your code            # 2. Create/edit files
+npm run dev                  # 3. Test at localhost:3000 (instant)
+npm run build                # 4. Catch TypeScript errors (10-30 sec)
+# Mark task [x]              # 5. Update STATUS.md
+git add -A && git commit -m "msg" && git push  # 6. Push when clean
+```
 
 ---
 
@@ -30,7 +69,7 @@
 
 **Purpose:** Live checklist of what needs to be done RIGHT NOW.
 
-**Who writes:** Claude.ai (manager)
+**Who writes:** Claude.ai (manager)  
 **Who executes:** Claude Code (IC)
 
 ```markdown
@@ -45,72 +84,17 @@
 - [x] Initialize Next.js project (2026-01-13)
 ```
 
-**Rules:**
-- Claude Code checks off tasks as completed
-- Claude Code adds notes if stuck
-- Claude.ai reviews and adds new tasks
-
 ### GitHub Issues (Big Picture)
 
 **Purpose:** Track phases, milestones, and overall project progress.
 
-**Who manages:** Claude.ai
+**Who manages:** Claude.ai  
 **Who monitors:** Josh
 
 **Structure:**
 - Phase 1: Issues #1-7 (Foundation)
 - Phase 2: Issues #8-13 (Core UI)
 - Phase 3+: Future phases
-
----
-
-## The Workflow
-
-### How Work Flows
-
-```
-              JOSH
-    (approves, decides, tests)
-                │
-                ▼
-┌───────────────────────────────────────────────────────┐
-│                    CLAUDE.AI                           │
-│                    (Manager)                           │
-│                                                        │
-│  • Writes tasks to STATUS.md                          │
-│  • Reviews Claude Code's completed work               │
-│  • Updates GitHub Issues when milestones complete     │
-│  • Can also build directly when needed                │
-└───────────────────────────────────────────────────────┘
-                │
-          STATUS.md
-          (Task Queue)
-                │
-                ▼
-┌───────────────────────────────────────────────────────┐
-│                   CLAUDE CODE                          │
-│                      (IC)                              │
-│                                                        │
-│  • Reads STATUS.md for current tasks                  │
-│  • Builds code LOCALLY                                │
-│  • Marks tasks [x] when complete                      │
-│  • Does NOT push until Josh says to                   │
-│  • Adds notes if blocked                              │
-└───────────────────────────────────────────────────────┘
-```
-
-### The Build Loop
-
-```
-DISCUSS → BUILD (locally) → TEST → REPEAT
-```
-
-When Josh says "push to GitHub":
-```
-git add -A && git commit -m "msg" && git push → Vercel deploys
-```
-
-**Critical:** All code is built locally first. Push only when Josh requests.
 
 ---
 
@@ -144,27 +128,29 @@ git add -A && git commit -m "msg" && git push → Vercel deploys
 - [ ] Make it work
 ```
 
-### Closing GitHub Issues
-
-When all STATUS.md tasks for an issue are complete:
-1. Add summary comment to the GitHub Issue
-2. Close the issue
-3. Update STATUS.md to show next issue's tasks
-
 ---
 
 ## For Claude Code (IC)
 
 ### Starting a Session
 
+```bash
+cd /Users/joshuamartin/Projects/resonance
+git pull                    # Get latest from GitHub
+cat STATUS.md               # See your tasks
+npm run dev                 # Start dev server
 ```
-1. git pull (get latest)
-2. Read STATUS.md for your task list
-3. Read CLAUDE.md for project context
-4. Start working on first unchecked task
-5. When done, mark [x] in STATUS.md
-6. Keep building - don't stop, don't wait
-7. Do NOT push until Josh says to
+
+### The Work Cycle
+
+```
+1. git pull                     # Get latest
+2. Read STATUS.md               # Find tasks
+3. Build code                   # Create/edit files
+4. npm run dev                  # Test at localhost:3000
+5. npm run build                # Catch errors
+6. Mark task [x] in STATUS.md   # When working
+7. git push                     # When feature complete + builds clean
 ```
 
 ### When Stuck
@@ -190,7 +176,7 @@ Then move to next unblocked task immediately.
 2. Check GitHub Issues for phase completion
 3. Test any deployed features
 4. Approve pending decisions or costs
-5. Nudge: "Work on the project" or "Push to GitHub"
+5. Nudge: "Work on the project"
 
 ### Removing Blockers
 
@@ -203,19 +189,20 @@ When you see blockers in STATUS.md:
 
 ## The Four Non-Negotiable Rules
 
-### Rule 1: STATUS.md is the Task Queue
+### Rule 1: GitHub is the Source of Truth
 
-- Claude.ai writes tasks
-- Claude Code executes and checks off
-- Everyone can read current state
-- GitHub Issues track the big picture only
+- Always `git pull` before starting work
+- Always `git push` when work is complete and builds clean
+- Local is for testing, not storage
 
-### Rule 2: Build Locally, Push When Told
+### Rule 2: Test Locally, Not on Vercel
 
+```bash
+npm run dev      # Instant feedback at localhost:3000
+npm run build    # Catches errors in 10-30 seconds
 ```
-ALWAYS: Build locally → test → mark done
-ONLY PUSH: When Josh says "push to GitHub"
-```
+
+Never wait for Vercel deploys during development.
 
 ### Rule 3: AI West Design System on Everything
 
@@ -258,9 +245,9 @@ Every table has `organization_id`. Every query is scoped. No exceptions.
 
 ```
 resonance/
-├── STATUS.md              # Task queue (Claude Code reads this)
-├── CLAUDE.md              # Project context for Claude Code
-├── .env.local             # Environment variables (gitignored)
+├── STATUS.md              # Task queue
+├── CLAUDE.md              # Context for Claude Code
+├── .env.local             # Environment variables
 ├── src/
 │   ├── app/               # Next.js pages
 │   │   ├── globals.css    # AI West design system
@@ -345,9 +332,9 @@ resonance/
 
 ## Key Resources
 
-**Repository:** https://github.com/joshmartin1186/resonance
-**Local Path:** /Users/joshuamartin/Projects/resonance
-**Supabase Project:** kjytcjnyowwmcmfudxup
+**Repository:** https://github.com/joshmartin1186/resonance  
+**Local Path:** /Users/joshuamartin/Projects/resonance  
+**Supabase Project:** kjytcjnyowwmcmfudxup  
 **Supabase URL:** https://kjytcjnyowwmcmfudxup.supabase.co
 
 ---
@@ -366,13 +353,12 @@ Users should feel:
 
 ```bash
 cd /Users/joshuamartin/Projects/resonance
-npm run dev                # Start dev server
-npm run build              # Check for errors
-```
 
-When Josh says "push":
-```bash
-git add -A && git commit -m "message" && git push
+# Daily workflow
+git pull                                              # Start here
+npm run dev                                           # Test at localhost:3000
+npm run build                                         # Check for errors
+git add -A && git commit -m "description" && git push # Push when clean
 ```
 
 ---
