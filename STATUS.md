@@ -1,87 +1,87 @@
 # Resonance - Task Queue
 
-**Last Updated:** 2025-01-13 by Claude.ai
+**Last Updated:** 2026-01-13 by Claude.ai
 **Current Phase:** 1 - Foundation (Issues #1-7)
 
 ---
 
-## 📋 TASK QUEUE (Claude Code: Do These)
+## 📋 TASK QUEUE (Claude Code: Build These)
 
 ### Next Up
-- [ ] Create storage bucket: `audio-uploads` (go to Supabase dashboard → Storage → New bucket)
-- [ ] Create storage bucket: `footage-uploads` (go to Supabase dashboard → Storage → New bucket)
-- [ ] Create Stripe products in Stripe Dashboard (Free, Creator $29, Pro $79, Studio $199)
-- [ ] Add Stripe environment variables to .env.local
-- [ ] Deploy to Vercel with environment variables (Issue #6)
 - [ ] Polish landing page (Issue #7)
+  - [ ] Add demo video placeholder with play button
+  - [ ] Improve hero section copy/visuals
+  - [ ] Add testimonial/social proof section
+  - [ ] Add FAQ section
+  - [ ] Improve mobile responsiveness
+  - [ ] Add footer with links
+
+---
+
+## ⏳ WAITING ON JOSH (Not for Claude Code)
+
+| Task | Status |
+|------|--------|
+| Create Stripe products in Dashboard | Pending |
+| Add Stripe env vars to .env.local | Pending |
+| Deploy to Vercel (Issue #6) | After Stripe setup |
 
 ---
 
 ## ✅ COMPLETED
 
-### 2025-01-13 (Claude.ai) - Stripe Integration
+### 2026-01-13 (Claude.ai) - Stripe Integration
 - [x] Create Stripe utility library with plan definitions
 - [x] Create webhook handler `/api/webhooks/stripe`
-  - [x] Handle `checkout.session.completed`
-  - [x] Handle `customer.subscription.created/updated`
-  - [x] Handle `customer.subscription.deleted`
-  - [x] Handle `invoice.payment_failed`
 - [x] Create checkout session API `/api/stripe/checkout`
 - [x] Create customer portal API `/api/stripe/portal`
 - [x] Create pricing page `/pricing` with all plans
 - [x] Create CheckoutButton and PortalButton components
-- [x] Update settings page with upgrade options and billing management
+- [x] Update settings page with upgrade options
 - [x] Close GitHub Issue #5
 
-### 2025-01-13 (Claude.ai) - Multi-Tenant Organization System
-- [x] Create OrganizationProvider context for org data access
-- [x] Create useOrganization hook for components
-- [x] Implement RBAC utilities (hasPermission, roleHierarchy)
-- [x] Create settings page with Account, Organization, Billing, Team sections
+### 2026-01-13 (Claude.ai) - Multi-Tenant Organization System
+- [x] Create OrganizationProvider context
+- [x] Create useOrganization hook
+- [x] Implement RBAC utilities
+- [x] Create settings page with tabs
 - [x] Create projects listing page `/projects`
-- [x] Add Providers wrapper to app layout
-- [x] Role-based UI (billing only for owners, team management for admins)
+- [x] Add Providers wrapper to layout
 - [x] Close GitHub Issue #4
 
-### 2025-01-13 (Claude.ai) - Authentication System
-- [x] Create `/login` page with email/password form
-- [x] Create `/signup` page with registration form
-- [x] Implement magic link authentication option
-- [x] Create auth callback route `/auth/callback`
-- [x] Create auth error page `/auth/auth-error`
-- [x] Add password reset request page `/reset-password`
-- [x] Add password reset confirm page `/reset-password/confirm`
-- [x] Create basic dashboard page `/dashboard`
-- [x] Add sign out route `/auth/signout`
-- [x] Update middleware to protect dashboard routes
-- [x] Auto-create organization on first signup
-- [x] Style all auth pages with AI West design system
+### 2026-01-13 (Claude.ai) - Authentication System
+- [x] Create `/login` page
+- [x] Create `/signup` page
+- [x] Implement magic link auth
+- [x] Create auth callback route
+- [x] Add password reset pages
+- [x] Create dashboard page
+- [x] Update middleware
 - [x] Close GitHub Issue #3
 
-### 2025-01-13 (Claude.ai) - Foundation
+### 2026-01-13 (Claude.ai) - Foundation
 - [x] Initialize Next.js 14 with TypeScript + Tailwind
-- [x] Install dependencies (Supabase, Stripe, lucide-react, etc.)
-- [x] Configure AI West design system in globals.css
-- [x] Create UI components (Button, Card, Input, Label, Badge)
-- [x] Build complete landing page
-- [x] Set up Supabase client/server/middleware with graceful fallback
-- [x] Create CLAUDE.md and STATUS.md for handoff
-- [x] Push to GitHub, close Issue #1
-- [x] Create Supabase project "resonance" (kjytcjnyowwmcmfudxup)
+- [x] Configure AI West design system
+- [x] Create UI components
+- [x] Build landing page
+- [x] Set up Supabase clients
+- [x] Close GitHub Issue #1
+
+### 2026-01-13 (Claude.ai) - Supabase Setup
+- [x] Create Supabase project
 - [x] Run all database migrations
-- [x] Update .env.local with real Supabase credentials
+- [x] Create storage buckets (audio-uploads, footage-uploads)
+- [x] Update .env.local
 - [x] Close GitHub Issue #2
 
 ---
 
 ## 📝 NOTES FOR CLAUDE CODE
 
-- Storage buckets must be created via Supabase Dashboard (no API for this)
-- Stripe products must be created in Stripe Dashboard, then add price IDs to env vars
-- When you complete a task, mark it [x] and add date/attribution
-- If blocked, note why and move on to next unblocked task
+- **Build locally** - Don't push until Josh says "push to GitHub"
+- When you complete a task, mark it [x]
+- If blocked, add to BLOCKERS table and move to next task
 - Check docs/ folder for detailed specs
-- Push to GitHub after completing logical chunks of work
 
 ---
 
@@ -89,8 +89,7 @@
 
 | Blocker | Waiting On | Added |
 |---------|------------|-------|
-| Storage buckets | Josh to create via Supabase Dashboard | 2025-01-13 |
-| Stripe products | Josh to create in Stripe Dashboard | 2025-01-13 |
+| Stripe products needed | Josh to create in Stripe Dashboard | 2026-01-13 |
 
 ---
 
@@ -103,5 +102,5 @@
 | #3 | Authentication | ✅ Done |
 | #4 | Multi-tenant org system | ✅ Done |
 | #5 | Stripe integration | ✅ Done |
-| #6 | Vercel deployment | 🔜 Next |
-| #7 | Landing page polish | ⏳ Queued |
+| #6 | Vercel deployment | ⏳ Waiting on Stripe |
+| #7 | Landing page polish | 🔜 Next |
