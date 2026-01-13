@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { CheckoutButton, PortalButton } from '@/components/billing-button'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -36,6 +37,7 @@ export default async function SettingsPage() {
 
   const isOwner = userRole === 'owner'
   const isAdmin = userRole === 'owner' || userRole === 'admin'
+  const hasStripeSubscription = !!organization?.stripe_customer_id
 
   return (
     <div className="min-h-screen bg-[#F8F6F3]">
@@ -141,7 +143,7 @@ export default async function SettingsPage() {
                 <div>
                   <p className="text-sm font-medium text-[#5A534C]">Generations This Month</p>
                   <p className="text-[#2A2621]">
-                    {organization?.generations_this_month || 0} / {organization?.generations_limit || 3}
+                    {organization?.generations_this_month || 0} / {organization?.generations_limit === -1 ? '∞' : organization?.generations_limit || 3}
                   </p>
                 </div>
               </div>
@@ -163,11 +165,51 @@ export default async function SettingsPage() {
                         ? 'You are on the free plan with limited generations.'
                         : `You are subscribed to the ${organization?.subscription_plan} plan.`}
                     </p>
+                    {organization?.subscription_status === 'past_due' && (
+                      <p className="text-sm text-[#C2410C] mt-1">
+                        Your payment is past due. Please update your payment method.
+                      </p>
+                    )}
                   </div>
-                  <Button variant="secondary">
-                    {organization?.subscription_plan === 'free' ? 'Upgrade Plan' : 'Manage Billing'}
-                  </Button>
+                  {hasStripeSubscription ? (
+                    <PortalButton>Manage Billing</PortalButton>
+                  ) : (
+                    <CheckoutButton plan="pro">Upgrade to Pro</CheckoutButton>
+                  )}
                 </div>
+                
+                {/* Upgrade Options for Free Users */}
+                {organization?.subscription_plan === 'free' && (
+                  <div className="mt-6 pt-6 border-t border-[#E2E0DB]">
+                    <h4 className="font-medium text-[#2A2621] mb-4">Upgrade your plan</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="p-4 border border-[#E2E0DB] rounded-lg">
+                        <p className="font-medium text-[#2A2621]">Creator</p>
+                        <p className="text-2xl font-bold text-[#2A2621]">$29<span className="text-sm font-normal text-[#5A534C]">/mo</span></p>
+                        <p className="text-xs text-[#5A534C] mb-3">20 generations/month</p>
+                        <CheckoutButton plan="creator" variant="secondary" className="w-full">
+                          Select
+                        </CheckoutButton>
+                      </div>
+                      <div className="p-4 border-2 border-[#C45D3A] rounded-lg">
+                        <p className="font-medium text-[#2A2621]">Pro</p>
+                        <p className="text-2xl font-bold text-[#2A2621]">$79<span className="text-sm font-normal text-[#5A534C]">/mo</span></p>
+                        <p className="text-xs text-[#5A534C] mb-3">Unlimited generations</p>
+                        <CheckoutButton plan="pro" className="w-full">
+                          Select
+                        </CheckoutButton>
+                      </div>
+                      <div className="p-4 border border-[#E2E0DB] rounded-lg">
+                        <p className="font-medium text-[#2A2621]">Studio</p>
+                        <p className="text-2xl font-bold text-[#2A2621]">$199<span className="text-sm font-normal text-[#5A534C]">/mo</span></p>
+                        <p className="text-xs text-[#5A534C] mb-3">Teams + API access</p>
+                        <CheckoutButton plan="studio" variant="secondary" className="w-full">
+                          Select
+                        </CheckoutButton>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
