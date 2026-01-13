@@ -1,15 +1,22 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { stripe, getGenerationLimit } from '@/lib/stripe'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-// Create admin client for webhook (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { persistSession: false } }
-)
+// Lazy-initialize admin client for webhook (bypasses RLS)
+let supabaseAdmin: SupabaseClient | null = null
+
+function getSupabaseAdmin() {
+  if (!supabaseAdmin && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      { auth: { persistSession: false } }
+    )
+  }
+  return supabaseAdmin
+}
 
 export async function POST(request: Request) {
   if (!stripe) {
@@ -88,17 +95,20 @@ export async function POST(request: Request) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const admin = getSupabaseAdmin()
+  if (!admin) throw new Error('Supabase admin client not configured')
+
   const customerId = session.customer as string
   const subscriptionId = session.subscription as string
   const customerEmail = session.customer_details?.email
   const metadata = session.metadata || {}
-  
+
   // Check if this is for an existing organization
   const existingOrgId = metadata.organization_id
-  
+
   if (existingOrgId) {
     // Upgrade existing organization
-    const { error } = await supabaseAdmin
+    const { error } = await admin
       .from('organizations')
       .update({
         stripe_customer_id: customerId,
@@ -114,9 +124,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   } else if (customerEmail) {
     // New signup via Stripe - create organization
     const orgName = metadata.org_name || `${customerEmail.split('@')[0]}'s Organization`
-    
+
     // Create organization
-    const { data: newOrg, error: orgError } = await supabaseAdmin
+    const { data: newOrg, error: orgError } = await admin
       .from('organizations')
       .insert({
         name: orgName,
@@ -135,7 +145,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
 
     // Log the event
-    await supabaseAdmin.from('system_logs').insert({
+    await admin.from('system_logs').insert({
       organization_id: newOrg.id,
       action_type: 'subscription_created',
       status: 'success',
@@ -147,32 +157,35 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  const admin = getSupabaseAdmin()
+  if (!admin) throw new Error('Supabase admin client not configured')
+
   const customerId = subscription.customer as string
-  
+
   // Get the price to determine the plan
   const priceId = subscription.items.data[0]?.price.id
   let plan = 'free'
-  
+
   if (priceId === process.env.STRIPE_PRICE_CREATOR) plan = 'creator'
   else if (priceId === process.env.STRIPE_PRICE_PRO) plan = 'pro'
   else if (priceId === process.env.STRIPE_PRICE_STUDIO) plan = 'studio'
 
   const status = subscription.status as string
-  
+
   // Map Stripe status to our status
   let subscriptionStatus = 'active'
   if (status === 'past_due') subscriptionStatus = 'past_due'
   else if (status === 'canceled' || status === 'unpaid') subscriptionStatus = 'canceled'
   else if (status === 'trialing') subscriptionStatus = 'trialing'
 
-  const { error } = await supabaseAdmin
+  const { error } = await admin
     .from('organizations')
     .update({
       subscription_status: subscriptionStatus,
       subscription_plan: plan,
       generations_limit: getGenerationLimit(plan),
-      trial_ends_at: subscription.trial_end 
-        ? new Date(subscription.trial_end * 1000).toISOString() 
+      trial_ends_at: subscription.trial_end
+        ? new Date(subscription.trial_end * 1000).toISOString()
         : null,
     })
     .eq('stripe_customer_id', customerId)
@@ -184,9 +197,12 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const admin = getSupabaseAdmin()
+  if (!admin) throw new Error('Supabase admin client not configured')
+
   const customerId = subscription.customer as string
 
-  const { error } = await supabaseAdmin
+  const { error } = await admin
     .from('organizations')
     .update({
       subscription_status: 'canceled',
@@ -202,14 +218,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   }
 
   // Log the cancellation
-  const { data: org } = await supabaseAdmin
+  const { data: org } = await admin
     .from('organizations')
     .select('id')
     .eq('stripe_customer_id', customerId)
     .single()
 
   if (org) {
-    await supabaseAdmin.from('system_logs').insert({
+    await admin.from('system_logs').insert({
       organization_id: org.id,
       action_type: 'subscription_canceled',
       status: 'success',
@@ -220,10 +236,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  const admin = getSupabaseAdmin()
+  if (!admin) throw new Error('Supabase admin client not configured')
+
   const customerId = invoice.customer as string
 
   // Update status to past_due
-  const { error } = await supabaseAdmin
+  const { error } = await admin
     .from('organizations')
     .update({
       subscription_status: 'past_due',
@@ -236,14 +255,14 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   }
 
   // Log the failure
-  const { data: org } = await supabaseAdmin
+  const { data: org } = await admin
     .from('organizations')
     .select('id')
     .eq('stripe_customer_id', customerId)
     .single()
 
   if (org) {
-    await supabaseAdmin.from('system_logs').insert({
+    await admin.from('system_logs').insert({
       organization_id: org.id,
       action_type: 'payment_failed',
       status: 'error',

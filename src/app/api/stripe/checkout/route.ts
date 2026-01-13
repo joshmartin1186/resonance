@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         .single()
 
       if (userData?.organizations) {
-        const org = userData.organizations as { stripe_customer_id: string | null }
+        const org = userData.organizations as unknown as { stripe_customer_id: string | null }
         customerId = org.stripe_customer_id || undefined
         organizationId = userData.organization_id
       }

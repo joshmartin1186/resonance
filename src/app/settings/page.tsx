@@ -99,7 +99,7 @@ export default async function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[#5A534C]">Role</p>
-                  <Badge variant="secondary" className="capitalize">{userRole}</Badge>
+                  <Badge variant="info" className="capitalize">{userRole}</Badge>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[#5A534C]">Member since</p>
@@ -133,8 +133,8 @@ export default async function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-[#5A534C]">Status</p>
-                  <Badge 
-                    variant={organization?.subscription_status === 'active' ? 'default' : 'secondary'}
+                  <Badge
+                    variant={organization?.subscription_status === 'active' ? 'success' : 'warning'}
                     className="capitalize"
                   >
                     {organization?.subscription_status || 'trialing'}
@@ -240,7 +240,7 @@ export default async function SettingsPage() {
                         <p className="text-sm text-[#5A534C]">{member.email}</p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="capitalize">
+                        <Badge variant="info" className="capitalize">
                           {member.role}
                         </Badge>
                         {member.id !== user.id && isOwner && (

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .single()
 
-    const org = userData?.organizations as { stripe_customer_id: string | null } | null
+    const org = userData?.organizations as unknown as { stripe_customer_id: string | null } | null
     
     if (!org?.stripe_customer_id) {
       return NextResponse.json(

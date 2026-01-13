@@ -94,9 +94,9 @@ export default function ConfirmResetPasswordPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full">
-                <Link href="/reset-password">Request New Link</Link>
-              </Button>
+              <Link href="/reset-password" className="w-full">
+                <Button className="w-full">Request New Link</Button>
+              </Link>
             </CardFooter>
           </Card>
         </div>

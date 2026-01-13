@@ -61,9 +61,9 @@ export default async function ProjectsPage() {
             <h1 className="text-2xl font-bold text-[#2A2621]">Projects</h1>
             <p className="text-[#5A534C] mt-1">Manage your visual generation projects</p>
           </div>
-          <Button asChild>
-            <Link href="/create">Create New Project</Link>
-          </Button>
+          <Link href="/create">
+            <Button>Create New Project</Button>
+          </Link>
         </div>
 
         {/* Projects Grid */}
@@ -81,8 +81,8 @@ export default async function ProjectsPage() {
                       {project.description || project.prompt}
                     </p>
                     <div className="flex items-center justify-between">
-                      <Badge 
-                        variant={project.status === 'completed' ? 'default' : 'secondary'}
+                      <Badge
+                        variant={project.status === 'completed' ? 'success' : 'default'}
                         className="capitalize"
                       >
                         {project.status}
@@ -100,9 +100,9 @@ export default async function ProjectsPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-[#5A534C] mb-4">No projects yet</p>
-              <Button asChild>
-                <Link href="/create">Create Your First Project</Link>
-              </Button>
+              <Link href="/create">
+                <Button>Create Your First Project</Button>
+              </Link>
             </CardContent>
           </Card>
         )}

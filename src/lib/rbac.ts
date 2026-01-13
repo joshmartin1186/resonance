@@ -47,7 +47,7 @@ export type Permission = keyof typeof permissions
  * Check if a role has a specific permission
  */
 export function hasPermission(userRole: UserRole, permission: Permission): boolean {
-  const allowedRoles = permissions[permission]
+  const allowedRoles = permissions[permission] as readonly string[]
   return allowedRoles.includes(userRole)
 }
 
@@ -63,7 +63,7 @@ export function hasRoleLevel(userRole: UserRole, requiredRole: UserRole): boolea
  */
 export function getRolePermissions(role: UserRole): Permission[] {
   return Object.entries(permissions)
-    .filter(([, allowedRoles]) => allowedRoles.includes(role))
+    .filter(([, allowedRoles]) => (allowedRoles as readonly string[]).includes(role))
     .map(([permission]) => permission as Permission)
 }
 

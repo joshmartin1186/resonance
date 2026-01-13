@@ -15,12 +15,12 @@ export default function PricingPage() {
               Resonance
             </Link>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" asChild>
-                <Link href="/login">Sign In</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/signup">Get Started</Link>
-              </Button>
+              <Link href="/login">
+                <Button variant="ghost">Sign In</Button>
+              </Link>
+              <Link href="/signup">
+                <Button>Get Started</Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -62,9 +62,9 @@ export default function PricingPage() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button variant="secondary" className="w-full" asChild>
-                <Link href="/signup">Get Started Free</Link>
-              </Button>
+              <Link href="/signup" className="w-full">
+                <Button variant="secondary" className="w-full">Get Started Free</Button>
+              </Link>
             </CardFooter>
           </Card>
 

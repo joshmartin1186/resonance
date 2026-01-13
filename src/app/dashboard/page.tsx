@@ -104,12 +104,12 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <h2 className="text-lg font-semibold text-[#2A2621] mb-4">Quick Actions</h2>
           <div className="flex gap-4">
-            <Button asChild>
-              <Link href="/create">Create New Project</Link>
-            </Button>
-            <Button variant="secondary" asChild>
-              <Link href="/projects">View All Projects</Link>
-            </Button>
+            <Link href="/create">
+              <Button>Create New Project</Button>
+            </Link>
+            <Link href="/projects">
+              <Button variant="secondary">View All Projects</Button>
+            </Link>
           </div>
         </div>
 
@@ -119,9 +119,9 @@ export default async function DashboardPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-[#5A534C] mb-4">No projects yet</p>
-              <Button asChild>
-                <Link href="/create">Create Your First Project</Link>
-              </Button>
+              <Link href="/create">
+                <Button>Create Your First Project</Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

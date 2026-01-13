@@ -22,12 +22,12 @@ export default function AuthErrorPage() {
             </div>
           </CardContent>
           <CardFooter className="flex gap-3">
-            <Button asChild variant="secondary" className="flex-1">
-              <Link href="/signup">Sign Up</Link>
-            </Button>
-            <Button asChild className="flex-1">
-              <Link href="/login">Sign In</Link>
-            </Button>
+            <Link href="/signup" className="flex-1">
+              <Button variant="secondary" className="w-full">Sign Up</Button>
+            </Link>
+            <Link href="/login" className="flex-1">
+              <Button className="w-full">Sign In</Button>
+            </Link>
           </CardFooter>
         </Card>
       </div>
