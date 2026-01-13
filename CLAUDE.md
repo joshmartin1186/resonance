@@ -1,11 +1,31 @@
 # Resonance - Claude Code Instructions
 
+## ⚠️ CRITICAL: Staying In Sync
+
+**GitHub Issues are the single source of truth.**
+
+Before starting ANY work:
+1. Check GitHub issues: https://github.com/joshmartin1186/resonance/issues
+2. Find the issue labeled `in-progress` or the lowest numbered open issue
+3. Comment on the issue that you're starting work
+
+After completing ANY work:
+1. Comment on the GitHub issue with what was done
+2. Close the issue if complete
+3. Update `STATUS.md` with current state
+4. Commit and push to GitHub
+
+This ensures all Claude instances (Claude.ai and Claude Code) stay synchronized.
+
+---
+
 ## What Is This Project?
 
 Resonance is a cinematic visual generation tool for organic/ambient music. Users upload audio + optional footage, describe the visual feeling they want, and the system creates unique narrative-driven videos.
 
 **Owner:** Josh (AI West)
 **Repository:** https://github.com/joshmartin1186/resonance
+**GitHub Issues:** https://github.com/joshmartin1186/resonance/issues
 
 ---
 
@@ -18,13 +38,12 @@ npm run dev
 
 ---
 
-## Current Status
+## Before You Start Working
 
-**Phase:** 1 of 7 (Foundation)
-**Last Completed:** Issue #1 - Next.js setup with AI West design system
-**Current Task:** Issue #2 - Configure Supabase
-
-See `STATUS.md` for detailed progress.
+1. `git pull` to get latest changes
+2. Check GitHub issues for current task
+3. Read `STATUS.md` for context
+4. If unclear, check `docs/` folder for specs
 
 ---
 
@@ -45,109 +64,116 @@ src/
 
 ---
 
-## Key Documentation
-
-All detailed specs are in the GitHub repo under `/docs`:
+## Key Documentation (in /docs on GitHub)
 
 | File | Use When |
 |------|----------|
-| `docs/PROJECT_INSTRUCTIONS.md` | Overall guidance, rules, workflow |
-| `docs/DATABASE_SCHEMA.md` | Creating tables, writing SQL |
-| `docs/AI_WEST_DESIGN_SYSTEM.md` | Any styling decisions (COPY EXACTLY) |
-| `docs/UI_SPECIFICATIONS.md` | Building pages and components |
-| `docs/TECHNICAL_ARCHITECTURE.md` | System design, audio analysis, rendering |
-| `docs/BUILD_PHASES.md` | What to build in what order |
+| `PROJECT_INSTRUCTIONS.md` | Overall guidance, rules, workflow |
+| `DATABASE_SCHEMA.md` | Creating tables, writing SQL |
+| `AI_WEST_DESIGN_SYSTEM.md` | Any styling decisions (COPY EXACTLY) |
+| `UI_SPECIFICATIONS.md` | Building pages and components |
+| `TECHNICAL_ARCHITECTURE.md` | System design, audio analysis, rendering |
+| `BUILD_PHASES.md` | What to build in what order |
+
+To read these, either:
+- Check GitHub: https://github.com/joshmartin1186/resonance/tree/main/docs
+- Or clone them locally
 
 ---
 
 ## The Rules (Important!)
 
-### 1. AI West Design System
-Never change these colors. Copy exactly from `docs/AI_WEST_DESIGN_SYSTEM.md`:
+### 1. AI West Design System - NEVER CHANGE
 - Background: `#F8F6F3`
 - Primary button: `#C45D3A` (terracotta)
 - Font: IBM Plex Sans
+- See `docs/AI_WEST_DESIGN_SYSTEM.md` for full spec
 
 ### 2. Multi-Tenant Architecture
 Every database table MUST have `organization_id`. Always use RLS policies.
 
-### 3. Update STATUS.md
-After completing work, update `STATUS.md` with what was done and what's next.
+### 3. GitHub Issues = Task List
+Always check and update GitHub issues. This is how multiple Claude instances stay in sync.
 
-### 4. GitHub Issues Are The Task List
-Check https://github.com/joshmartin1186/resonance/issues for current tasks.
-
----
-
-## Phase 1 Tasks (Current)
-
-| Issue | Task | Status |
-|-------|------|--------|
-| #1 | Next.js + Tailwind + AI West design | ✅ Done |
-| #2 | Supabase setup + migrations | 🔨 Next |
-| #3 | Auth (login, signup, magic link) | Waiting |
-| #4 | Multi-tenant organization system | Waiting |
-| #5 | Stripe webhook handler | Waiting |
-| #6 | Deploy to Vercel | Waiting |
-| #7 | Polish landing page | Waiting |
+### 4. Commit Frequently
+Push to GitHub after completing each logical unit of work.
 
 ---
 
-## How To Continue Each Task
+## Current Phase: 1 (Foundation)
+
+Check GitHub issues for latest status. Phase 1 issues are #1-#7.
+
+---
+
+## Implementation Guides Per Issue
 
 ### Issue #2: Supabase Setup
-1. Create Supabase project (need Josh to confirm $10/mo cost)
-2. Run SQL from `docs/DATABASE_SCHEMA.md` in order:
-   - organizations table
-   - users table
-   - projects table
-   - project_footage table
-   - generations table
-   - system_logs table
-   - user_preferences table
-   - All RLS policies
-   - Helper functions
-3. Create storage buckets: `audio-uploads`, `footage-uploads`
-4. Add credentials to `.env.local`
-5. Test connection
+```
+1. Need Josh to confirm $10/mo cost for new project
+2. Create project via Supabase MCP or dashboard
+3. Run SQL migrations from docs/DATABASE_SCHEMA.md:
+   - organizations, users, projects, project_footage
+   - generations, system_logs, user_preferences
+   - All RLS policies and helper functions
+4. Create storage buckets: audio-uploads, footage-uploads
+5. Update .env.local with real credentials
+6. Test: npm run dev should load without Supabase errors
+```
 
 ### Issue #3: Authentication
-1. Create `src/app/(auth)/login/page.tsx`
-2. Create `src/app/(auth)/signup/page.tsx`
-3. Use Supabase Auth with email/password
-4. Add magic link option
-5. Redirect to `/dashboard` after auth
-6. Style with AI West design system
+```
+1. Create src/app/(auth)/login/page.tsx
+2. Create src/app/(auth)/signup/page.tsx  
+3. Use Supabase Auth (email/password + magic link)
+4. Create src/app/(auth)/callback/route.ts for OAuth callback
+5. Redirect to /dashboard after successful auth
+6. Style with AI West design system (see docs/)
+```
 
-### Issue #4: Multi-Tenant Orgs
-1. Create org on signup (or via Stripe webhook)
-2. Create `OrganizationContext` provider
-3. Wrap app in provider
-4. All queries filter by `organization_id`
+### Issue #4: Multi-Tenant Organizations
+```
+1. On signup: create org, link user as owner
+2. Create src/contexts/OrganizationContext.tsx
+3. Wrap app in provider (layout.tsx)
+4. All database queries must filter by organization_id
+5. Test: two different signups should have isolated data
+```
 
-### Issue #5: Stripe Integration
-1. Create `/api/webhooks/stripe/route.ts`
-2. Handle: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
-3. Create org + user on checkout complete
-4. Update subscription status in database
+### Issue #5: Stripe Webhooks
+```
+1. Create src/app/api/webhooks/stripe/route.ts
+2. Handle events:
+   - checkout.session.completed → create org + user
+   - customer.subscription.updated → update status
+   - customer.subscription.deleted → mark canceled
+3. Verify webhook signature
+4. Test with Stripe CLI: stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
 
-### Issue #6: Vercel Deploy
+### Issue #6: Deploy to Vercel
+```
 1. Connect GitHub repo to Vercel
-2. Add all env vars from `.env.local`
-3. Set up Stripe webhook for production URL
-4. Test deployment
+2. Add env vars (copy from .env.local)
+3. Configure Stripe webhook for production URL
+4. Test deployment works
+5. Update NEXT_PUBLIC_APP_URL
+```
 
 ### Issue #7: Landing Page Polish
-1. Review against `docs/UI_SPECIFICATIONS.md`
-2. Test mobile responsiveness
+```
+1. Review against docs/UI_SPECIFICATIONS.md
+2. Test mobile responsiveness (320px, 768px, 1024px+)
 3. Verify all links work
-4. Check accessibility
+4. Check accessibility (keyboard nav, contrast)
+5. Add any missing sections from spec
+```
 
 ---
 
 ## Environment Variables
 
-Create `.env.local` with:
+`.env.local` has placeholders. Replace with real values:
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -160,30 +186,29 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ---
 
-## Common Commands
+## Workflow Summary
 
-```bash
-# Development
-npm run dev
-
-# Check for errors
-npm run build
-
-# Push to GitHub
-git add -A && git commit -m "description" && git push
+```
+START SESSION:
+  git pull
+  Check GitHub issues
+  Read STATUS.md
+  
+DO WORK:
+  Build the feature
+  Test it works
+  
+END SESSION:
+  git add -A && git commit -m "description" && git push
+  Comment on GitHub issue with what was done
+  Close issue if complete
+  Update STATUS.md
 ```
 
 ---
 
-## When You're Done Working
+## If You're Stuck
 
-1. Update `STATUS.md` with progress
-2. Commit and push to GitHub
-3. Comment on the relevant GitHub issue
-4. If issue complete, close it
-
----
-
-## Questions?
-
-If something is unclear, check the docs in `/docs` folder or ask Josh.
+1. Check `docs/` folder for detailed specs
+2. Look at existing code patterns in `src/`
+3. Ask Josh for clarification
