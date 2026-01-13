@@ -11,12 +11,22 @@
 - [ ] Create storage bucket: `audio-uploads` (go to Supabase dashboard → Storage → New bucket)
 - [ ] Create storage bucket: `footage-uploads` (go to Supabase dashboard → Storage → New bucket)
 - [ ] Test: run `npm run dev` and verify auth flow works
-- [ ] Implement multi-tenant organization system (Issue #4)
 - [ ] Set up Stripe products and webhook handler (Issue #5)
+- [ ] Deploy to Vercel with environment variables (Issue #6)
 
 ---
 
 ## ✅ COMPLETED
+
+### 2025-01-13 (Claude.ai) - Multi-Tenant Organization System
+- [x] Create OrganizationProvider context for org data access
+- [x] Create useOrganization hook for components
+- [x] Implement RBAC utilities (hasPermission, roleHierarchy)
+- [x] Create settings page with Account, Organization, Billing, Team sections
+- [x] Create projects listing page `/projects`
+- [x] Add Providers wrapper to app layout
+- [x] Role-based UI (billing only for owners, team management for admins)
+- [x] Close GitHub Issue #4
 
 ### 2025-01-13 (Claude.ai) - Authentication System
 - [x] Create `/login` page with email/password form
@@ -84,7 +94,7 @@
 | #1 | Next.js project setup | ✅ Done |
 | #2 | Supabase configuration | ✅ Done |
 | #3 | Authentication | ✅ Done |
-| #4 | Multi-tenant org system | 🔜 Next |
-| #5 | Stripe integration | ⏳ Queued |
+| #4 | Multi-tenant org system | ✅ Done |
+| #5 | Stripe integration | 🔜 Next |
 | #6 | Vercel deployment | ⏳ Queued |
 | #7 | Landing page polish | ⏳ Queued |
