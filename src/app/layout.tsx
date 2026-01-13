@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Resonance - Beautiful Visuals for Beautiful Music",
-  description: "Cinematic visual generation tool for organic and ambient music. Creates unique, narrative-driven visuals that respond to subtle musical cues.",
+  title: "Resonance - Cinematic Visuals for Your Music",
+  description: "Create unique, narrative-driven visuals that respond to the subtle nuances of organic music.",
 };
 
 export default function RootLayout({
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
