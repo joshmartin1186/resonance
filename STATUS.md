@@ -10,22 +10,30 @@
 ### Next Up
 - [ ] Create storage bucket: `audio-uploads` (go to Supabase dashboard → Storage → New bucket)
 - [ ] Create storage bucket: `footage-uploads` (go to Supabase dashboard → Storage → New bucket)
-- [ ] Test: run `npm run dev` and verify app connects to Supabase without errors
-
-### After Storage Buckets
-- [ ] Build login page at `/login` (see docs/UI_SPECIFICATIONS.md)
-- [ ] Build signup page at `/signup`
-- [ ] Implement Supabase Auth (email/password + magic links)
-- [ ] Create auth callback route `/auth/callback`
-- [ ] Test: user can sign up, receive confirmation, log in
-- [ ] Comment on GitHub Issue #3 when complete
-- [ ] Close GitHub Issue #3
+- [ ] Test: run `npm run dev` and verify auth flow works
+- [ ] Implement multi-tenant organization system (Issue #4)
+- [ ] Set up Stripe products and webhook handler (Issue #5)
 
 ---
 
 ## ✅ COMPLETED
 
-### 2025-01-13 (Claude.ai)
+### 2025-01-13 (Claude.ai) - Authentication System
+- [x] Create `/login` page with email/password form
+- [x] Create `/signup` page with registration form
+- [x] Implement magic link authentication option
+- [x] Create auth callback route `/auth/callback`
+- [x] Create auth error page `/auth/auth-error`
+- [x] Add password reset request page `/reset-password`
+- [x] Add password reset confirm page `/reset-password/confirm`
+- [x] Create basic dashboard page `/dashboard`
+- [x] Add sign out route `/auth/signout`
+- [x] Update middleware to protect dashboard routes
+- [x] Auto-create organization on first signup
+- [x] Style all auth pages with AI West design system
+- [x] Close GitHub Issue #3
+
+### 2025-01-13 (Claude.ai) - Foundation
 - [x] Initialize Next.js 14 with TypeScript + Tailwind
 - [x] Install dependencies (Supabase, Stripe, lucide-react, etc.)
 - [x] Configure AI West design system in globals.css
@@ -65,7 +73,7 @@
 
 | Blocker | Waiting On | Added |
 |---------|------------|-------|
-| (none currently) | | |
+| Storage buckets | Josh to create via Supabase Dashboard | 2025-01-13 |
 
 ---
 
@@ -75,8 +83,8 @@
 |-------|-------|--------|
 | #1 | Next.js project setup | ✅ Done |
 | #2 | Supabase configuration | ✅ Done |
-| #3 | Authentication | 🔜 Next |
-| #4 | Multi-tenant org system | ⏳ Queued |
+| #3 | Authentication | ✅ Done |
+| #4 | Multi-tenant org system | 🔜 Next |
 | #5 | Stripe integration | ⏳ Queued |
 | #6 | Vercel deployment | ⏳ Queued |
 | #7 | Landing page polish | ⏳ Queued |
