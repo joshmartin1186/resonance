@@ -18,11 +18,11 @@
 |------|-----|------------------|
 | **Product Owner** | Josh | Approves costs, makes decisions, nudges progress, tests features |
 | **Manager** | Claude.ai | Plans work, writes tasks, reviews progress, updates GitHub, removes blockers |
-| **IC (Builder)** | Claude Code | Executes tasks, writes code, marks tasks complete, asks for help when stuck |
+| **IC (Builder)** | Claude Code | Executes tasks, writes code locally, marks tasks complete |
 
 ---
 
-## The Two Source Files
+## The Two Coordination Files
 
 ### STATUS.md (Task Queue)
 
@@ -34,24 +34,21 @@
 **Who executes:** Claude Code (IC)
 
 ```markdown
-## 📋 TASK QUEUE (Claude Code: Do These)
+## 📋 TASK QUEUE (Claude Code: Build These)
 
 ### Next Up
 - [ ] Build login page at /login
 - [ ] Build signup page at /signup
-- [ ] Implement Supabase Auth
 - [ ] Test: user can sign up and log in
 
 ## ✅ COMPLETED
-- [x] Initialize Next.js project (2025-01-13, Claude.ai)
-- [x] Run database migrations (2025-01-13, Claude.ai)
+- [x] Initialize Next.js project (2026-01-13)
 ```
 
 **Rules:**
-- Claude Code checks off tasks as it completes them
+- Claude Code checks off tasks as completed
 - Claude Code adds notes if stuck
 - Claude.ai reviews and adds new tasks
-- Always include "Test:" tasks to verify work
 
 ### GitHub Issues (Big Picture)
 
@@ -65,12 +62,6 @@
 - Phase 2: Issues #8-13 (Core UI)
 - Phase 3+: Future phases
 
-**Rules:**
-- One issue per logical milestone
-- Comment on issues when work completes
-- Close issues when all related tasks done
-- Use labels: `phase-1`, `phase-2`, `bug`, `enhancement`
-
 ---
 
 ## The Workflow
@@ -78,54 +69,48 @@
 ### How Work Flows
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         JOSH                                 │
-│              (Approves, decides, tests)                      │
-│                           │                                  │
-│                           ▼                                  │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                    CLAUDE.AI                         │    │
-│  │                    (Manager)                         │    │
-│  │                                                      │    │
-│  │  • Reads GitHub Issues for big picture              │    │
-│  │  • Writes tasks to STATUS.md                        │    │
-│  │  • Reviews Claude Code's completed work             │    │
-│  │  • Updates GitHub Issues when milestones complete   │    │
-│  │  • Removes blockers (approvals, decisions)          │    │
-│  │  • Can also build directly when needed              │    │
-│  └─────────────────────────────────────────────────────┘    │
-│                           │                                  │
-│                    STATUS.md                                 │
-│                    (Task Queue)                              │
-│                           │                                  │
-│                           ▼                                  │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │                   CLAUDE CODE                        │    │
-│  │                      (IC)                            │    │
-│  │                                                      │    │
-│  │  • Reads STATUS.md for current tasks                │    │
-│  │  • Executes tasks locally                           │    │
-│  │  • Marks tasks [x] when complete                    │    │
-│  │  • Pushes code to GitHub                            │    │
-│  │  • Adds notes if blocked or confused                │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+              JOSH
+    (approves, decides, tests)
+                │
+                ▼
+┌───────────────────────────────────────────────────────┐
+│                    CLAUDE.AI                           │
+│                    (Manager)                           │
+│                                                        │
+│  • Writes tasks to STATUS.md                          │
+│  • Reviews Claude Code's completed work               │
+│  • Updates GitHub Issues when milestones complete     │
+│  • Can also build directly when needed                │
+└───────────────────────────────────────────────────────┘
+                │
+          STATUS.md
+          (Task Queue)
+                │
+                ▼
+┌───────────────────────────────────────────────────────┐
+│                   CLAUDE CODE                          │
+│                      (IC)                              │
+│                                                        │
+│  • Reads STATUS.md for current tasks                  │
+│  • Builds code LOCALLY                                │
+│  • Marks tasks [x] when complete                      │
+│  • Does NOT push until Josh says to                   │
+│  • Adds notes if blocked                              │
+└───────────────────────────────────────────────────────┘
 ```
 
 ### The Build Loop
 
 ```
-DISCUSS → BUILD (locally) → PUSH → DEPLOY → CHECK → REPEAT
+DISCUSS → BUILD (locally) → TEST → REPEAT
 ```
 
-1. **DISCUSS:** What are we building? Check STATUS.md or GitHub Issues.
-2. **BUILD:** Create/modify code locally using file tools.
-3. **PUSH:** `git add -A && git commit -m "msg" && git push`
-4. **DEPLOY:** Vercel auto-deploys from GitHub.
-5. **CHECK:** Verify deployment, check logs, test features.
-6. **REPEAT:** Mark task done, move to next.
+When Josh says "push to GitHub":
+```
+git add -A && git commit -m "msg" && git push → Vercel deploys
+```
 
-**Critical:** All code is built locally first, then pushed. Never create files directly on GitHub.
+**Critical:** All code is built locally first. Push only when Josh requests.
 
 ---
 
@@ -134,9 +119,9 @@ DISCUSS → BUILD (locally) → PUSH → DEPLOY → CHECK → REPEAT
 ### Starting a Session
 
 ```
-1. Pull latest: Read STATUS.md to see what Claude Code completed
+1. Read STATUS.md to see what Claude Code completed
 2. Check GitHub Issues for overall phase progress
-3. Review any blockers or notes from Claude Code
+3. Review any blockers or notes
 4. Add new tasks to STATUS.md if needed
 5. Update GitHub Issues if milestones completed
 6. Ask Josh what to focus on if unclear
@@ -151,7 +136,6 @@ DISCUSS → BUILD (locally) → PUSH → DEPLOY → CHECK → REPEAT
 - [ ] Connect to Supabase Auth signInWithPassword
 - [ ] Handle errors (show toast on failure)
 - [ ] Test: user can log in with valid credentials
-- [ ] Test: user sees error with invalid credentials
 ```
 
 **Don't:**
@@ -164,7 +148,7 @@ DISCUSS → BUILD (locally) → PUSH → DEPLOY → CHECK → REPEAT
 
 When all STATUS.md tasks for an issue are complete:
 1. Add summary comment to the GitHub Issue
-2. Close the issue with `state_reason: completed`
+2. Close the issue
 3. Update STATUS.md to show next issue's tasks
 
 ---
@@ -178,8 +162,9 @@ When all STATUS.md tasks for an issue are complete:
 2. Read STATUS.md for your task list
 3. Read CLAUDE.md for project context
 4. Start working on first unchecked task
-5. When done, mark [x] and add date
-6. git push after each logical chunk
+5. When done, mark [x] in STATUS.md
+6. Keep building - don't stop, don't wait
+7. Do NOT push until Josh says to
 ```
 
 ### When Stuck
@@ -190,22 +175,10 @@ Add a note to STATUS.md:
 
 | Blocker | Waiting On | Added |
 |---------|------------|-------|
-| Can't find Stripe keys | Need Josh to create Stripe account | 2025-01-14 |
+| Can't find Stripe keys | Josh | 2026-01-14 |
 ```
 
-Then move to next unblocked task.
-
-### Completing Tasks
-
-```markdown
-## ✅ COMPLETED
-
-### 2025-01-14 (Claude Code)
-- [x] Build login page at /login
-- [x] Build signup page at /signup
-- [x] Connect to Supabase Auth
-- [x] Test: login works with valid credentials
-```
+Then move to next unblocked task immediately.
 
 ---
 
@@ -215,21 +188,16 @@ Then move to next unblocked task.
 
 1. Open STATUS.md to see progress
 2. Check GitHub Issues for phase completion
-3. Test any newly deployed features at Vercel URL
-4. Approve any pending decisions or costs
-5. Nudge Claude Code if tasks stalling: "Keep working on the project"
+3. Test any deployed features
+4. Approve pending decisions or costs
+5. Nudge: "Work on the project" or "Push to GitHub"
 
 ### Removing Blockers
 
 When you see blockers in STATUS.md:
 - **Cost approval:** "Go ahead and create the Supabase project"
-- **Decision needed:** "Use option A for the pricing page"
+- **Decision needed:** "Use option A"
 - **Access needed:** Share API keys, credentials, etc.
-
-### Nudging Progress
-
-To Claude Code: "Work on the project" or "Continue where you left off"
-To Claude.ai: "Check on progress" or "What's next for Phase 1?"
 
 ---
 
@@ -242,11 +210,11 @@ To Claude.ai: "Check on progress" or "What's next for Phase 1?"
 - Everyone can read current state
 - GitHub Issues track the big picture only
 
-### Rule 2: Build Locally, Push to GitHub
+### Rule 2: Build Locally, Push When Told
 
 ```
-NEVER: Create files directly on GitHub
-ALWAYS: Build locally → git push → Vercel deploys
+ALWAYS: Build locally → test → mark done
+ONLY PUSH: When Josh says "push to GitHub"
 ```
 
 ### Rule 3: AI West Design System on Everything
@@ -297,20 +265,16 @@ resonance/
 │   ├── app/               # Next.js pages
 │   │   ├── globals.css    # AI West design system
 │   │   ├── page.tsx       # Landing page
-│   │   ├── login/         # Auth pages
+│   │   ├── login/
 │   │   ├── signup/
-│   │   └── dashboard/
-│   ├── components/
-│   │   └── ui/            # Reusable components
-│   └── lib/
-│       └── supabase/      # Supabase clients
+│   │   ├── dashboard/
+│   │   ├── settings/
+│   │   ├── projects/
+│   │   └── pricing/
+│   ├── components/ui/     # Reusable components
+│   ├── contexts/          # React contexts
+│   └── lib/               # Utilities
 ├── docs/                  # Detailed specifications
-│   ├── PROJECT_INSTRUCTIONS.md  # This file
-│   ├── DATABASE_SCHEMA.md
-│   ├── AI_WEST_DESIGN_SYSTEM.md
-│   ├── UI_SPECIFICATIONS.md
-│   ├── TECHNICAL_ARCHITECTURE.md
-│   └── ...
 └── public/
 ```
 
@@ -333,12 +297,12 @@ resonance/
 ## Build Phases Overview
 
 ### Phase 1: Foundation (Issues #1-7)
-- [x] #1: Next.js project setup
-- [x] #2: Supabase configuration
-- [ ] #3: Authentication
-- [ ] #4: Multi-tenant organization system
-- [ ] #5: Stripe integration
-- [ ] #6: Vercel deployment
+- [x] #1: Next.js project setup ✅
+- [x] #2: Supabase configuration ✅
+- [x] #3: Authentication ✅
+- [x] #4: Multi-tenant organization system ✅
+- [x] #5: Stripe integration ✅
+- [ ] #6: Vercel deployment (waiting on Stripe products)
 - [ ] #7: Landing page polish
 
 ### Phase 2: Core UI (Issues #8-13)
@@ -401,15 +365,14 @@ Users should feel:
 ## Quick Commands
 
 ```bash
-# Start dev server
 cd /Users/joshuamartin/Projects/resonance
-npm run dev
+npm run dev                # Start dev server
+npm run build              # Check for errors
+```
 
-# Push changes
+When Josh says "push":
+```bash
 git add -A && git commit -m "message" && git push
-
-# Check for errors
-npm run build
 ```
 
 ---
