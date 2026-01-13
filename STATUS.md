@@ -1,6 +1,6 @@
 # Resonance - Task Queue
 
-**Last Updated:** 2026-01-13 by Claude.ai
+**Last Updated:** 2026-01-13 by Claude.ai  
 **Current Phase:** 1 - Foundation (Issues #1-7)
 
 ---
@@ -76,12 +76,20 @@
 
 ---
 
-## 📝 NOTES FOR CLAUDE CODE
+## 📝 WORKFLOW
 
-- **Build locally** - Don't push until Josh says "push to GitHub"
-- When you complete a task, mark it [x]
-- If blocked, add to BLOCKERS table and move to next task
-- Check docs/ folder for detailed specs
+**GitHub is the source of truth. Test locally. Push when it works.**
+
+```bash
+git pull                     # 1. Get latest
+# Build your code            # 2. Create/edit files
+npm run dev                  # 3. Test at localhost:3000
+npm run build                # 4. Catch errors before pushing
+# Mark task [x]              # 5. Update this file
+git add -A && git commit -m "msg" && git push  # 6. Push when clean
+```
+
+**Never wait for Vercel** - local testing is instant. Vercel is for production only.
 
 ---
 
