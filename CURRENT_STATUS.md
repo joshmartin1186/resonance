@@ -18,7 +18,40 @@ The core pipeline is working end-to-end with sophisticated procedural graphics:
 
 ## Recent Updates (2026-01-14)
 
-### 1. FFmpeg geq Filter Error (FIXED)
+### MAJOR: Sophisticated Shader System (NEW - Session 2)
+
+**Upgraded from basic color gradients to TouchDesigner-level procedural graphics.**
+
+Previously, the system only generated simple color gradients that switched every few seconds. Now we have 5 fully audio-reactive GLSL shaders with complex procedural algorithms:
+
+**Available Shaders:**
+1. **Perlin Noise Flow** (`perlin-noise`) - Organic flowing patterns with multi-octave fractal noise
+2. **Particle Flow Field** (`particle-flow`) - GPU particle system with 200-500 particles guided by Perlin flow fields
+3. **Mandelbrot Fractal** (`fractal-mandelbrot`) - Dynamic fractal zoom with 50-200 iterations, explores different fractal regions
+4. **Voronoi Cells** (`voronoi-cells`) - Organic cellular patterns with animated Voronoi boundaries
+5. **Reaction-Diffusion** (`reaction-diffusion`) - Biological pattern formation simulating natural growth
+
+**Audio-Reactive Parameters:**
+- **Energy** (loudness) → Brightness, particle count, zoom level
+- **Bass** (low freq) → Spatial warping, rotation, color saturation
+- **Mid** (mid freq) → Flow speed, pattern scale, view position
+- **High** (high freq) → Detail layers, edge glow, particle size
+- **Transients** (beats) → Flash effects, color shifts, pattern jumps
+
+**Implementation Details:**
+- `worker/src/shaders/*.glsl` - Full GLSL shader source (330+ lines per shader with detailed comments)
+- `worker/src/lib/shader-manager.ts` - Shader manager with audio feature extraction at specific timestamps
+- `worker/src/lib/renderer.ts` - Updated `generateProceduralSegment()` to support `shaderType` parameter
+- `worker/src/lib/orchestrator.ts` - Claude AI intelligently selects shaders based on mood/style/energy
+- `worker/test-shader-render.ts` - Test suite that renders all 5 shaders to /tmp/resonance-shader-test/
+
+**Current Implementation:**
+Uses FFmpeg's built-in filters (`mandelbrot`, `geq`, `noise`, `gblur`) to approximate shader effects. All 5 shaders tested and rendering successfully.
+
+**Future Enhancement:**
+Build custom FFmpeg with native GLSL/OpenGL filter support for true real-time GPU shader execution (see ffmpeg-gl-transition and ffmpeg-opengl on GitHub).
+
+### 1. FFmpeg geq Filter Error (FIXED - Session 1)
 **Problem:** ffmpeg 8.0 rejected `if(mod(...))` conditional expressions in geq filters.
 ```
 [Parsed_geq_1] Missing ')' or too many args in 'if(mod(X+Y+T*100,100)<50,200,80)'
