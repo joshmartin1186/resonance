@@ -3,6 +3,7 @@ import { join } from 'path'
 import { runFFmpeg, buildFilterChain, downloadFile, getVideoMetadata, concatenateVideos, imageToVideo } from './ffmpeg.js'
 import type { AudioFeatures } from './audio-analyzer.js'
 import { buildShaderFilter, type ShaderType } from './shader-manager.js'
+import { renderShaderVideo } from './gpu-shader-renderer.js'
 
 // Types
 export interface RenderConfig {
@@ -207,6 +208,19 @@ async function processFootageSegment(
 }
 
 /**
+ * Get width and height for a resolution
+ */
+function getResolution(resolution: string): [number, number] {
+  switch (resolution) {
+    case '480p': return [854, 480]
+    case '720p': return [1280, 720]
+    case '1080p': return [1920, 1080]
+    case '4K': return [3840, 2160]
+    default: return [1920, 1080]
+  }
+}
+
+/**
  * Generate procedural/generative content with sophisticated shaders
  */
 async function generateProceduralSegment(
@@ -218,60 +232,73 @@ async function generateProceduralSegment(
   const duration = segment.endTime - segment.startTime
   const fps = 30
 
-  // Use sophisticated shader system if shaderType is specified
-  let filter: string
-
   console.log(`[DEBUG] Segment shaderType: ${segment.shaderType}, generativeType: ${segment.generativeType}`)
 
+  // Use GPU-accelerated WebGL shader rendering if shaderType is specified
   if (segment.shaderType) {
-    // NEW: Use sophisticated GLSL-approximated shaders
-    console.log(`[DEBUG] Using shader: ${segment.shaderType}`)
-    filter = buildShaderFilter({
-      type: segment.shaderType,
+    console.log(`[GPU] Rendering shader: ${segment.shaderType}`)
+
+    const [width, height] = getResolution(config.resolution)
+
+    await renderShaderVideo({
+      shaderType: segment.shaderType,
       duration,
-      audioFeatures: config.audioFeatures,
+      width,
+      height,
+      fps,
       colors: {
         primary: colorPalette[0] || '#C45D3A',
         secondary: colorPalette[1] || '#2A2621',
         accent: colorPalette[2] || '#F0EDE8'
       },
-      intensity: config.effectIntensity
-    }, config.resolution)
-  } else {
-    // LEGACY: Fallback to simple patterns for backward compatibility
-    const primaryColor = colorPalette[0] || '#C45D3A'
-    const r = parseInt(primaryColor.slice(1, 3), 16)
-    const g = parseInt(primaryColor.slice(3, 5), 16)
-    const b = parseInt(primaryColor.slice(5, 7), 16)
+      intensity: config.effectIntensity,
+      audioFeatures: {
+        energyCurve: config.audioFeatures.energyCurve || [],
+        bassCurve: config.audioFeatures.energyCurve || [],
+        midCurve: config.audioFeatures.energyCurve || [],
+        highCurve: config.audioFeatures.energyCurve || []
+      }
+    }, outputPath)
 
-    // Convert RGB to YUV Cb/Cr for geq filter
-    const cb = Math.round(128 + (-0.169 * r - 0.331 * g + 0.500 * b))
-    const cr = Math.round(128 + (0.500 * r - 0.419 * g - 0.081 * b))
+    return
+  }
 
-    switch (segment.generativeType) {
-      case 'particles':
-        filter = `color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},noise=alls=80:allf=t,gblur=sigma=3,eq=brightness=0.1:contrast=1.5:saturation=1.5`
-        break
+  // LEGACY: Use FFmpeg filters for old generativeType
+  console.log(`[LEGACY] Using generativeType: ${segment.generativeType || 'default'}`)
 
-      case 'waves':
-        filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+127*sin(2*PI*(X/W)*4+T*2)':cb='${cb}+20*sin(T*3)':cr='${cr}+20*cos(T*2)',eq=saturation=2:contrast=1.3`
-        break
+  const primaryColor = colorPalette[0] || '#C45D3A'
+  const r = parseInt(primaryColor.slice(1, 3), 16)
+  const g = parseInt(primaryColor.slice(3, 5), 16)
+  const b = parseInt(primaryColor.slice(5, 7), 16)
 
-      case 'geometric':
-        filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+127*sin(X/30+T*2)*cos(Y/30+T*3)':cb='${cb}+30*sin(X/100)':cr='${cr}+30*cos(Y/100)',eq=saturation=1.8:brightness=0.05`
-        break
+  // Convert RGB to YUV Cb/Cr for geq filter
+  const cb = Math.round(128 + (-0.169 * r - 0.331 * g + 0.500 * b))
+  const cr = Math.round(128 + (0.500 * r - 0.419 * g - 0.081 * b))
 
-      case 'noise':
-        filter = `color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},noise=alls=50:allf=t+u,hue=h=t*30:s=1.5,eq=contrast=1.4`
-        break
+  let filter: string
+  switch (segment.generativeType) {
+    case 'particles':
+      filter = `color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},noise=alls=80:allf=t,gblur=sigma=3,eq=brightness=0.1:contrast=1.5:saturation=1.5`
+      break
 
-      case 'spectrum':
-        filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='255*pow(sin(X/W*PI*8+T*4),2)*(1-Y/H)':cb='${cb}+40*sin(X/W*PI*2)':cr='${cr}+40*cos(T*2)',eq=saturation=2:contrast=1.2`
-        break
+    case 'waves':
+      filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+127*sin(2*PI*(X/W)*4+T*2)':cb='${cb}+20*sin(T*3)':cr='${cr}+20*cos(T*2)',eq=saturation=2:contrast=1.3`
+      break
 
-      default:
-        filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+50*sin((X+T*200)/200)':cb='${cb}+30*sin(X/300+T)':cr='${cr}+30*cos(Y/300+T)',eq=saturation=1.5`
-    }
+    case 'geometric':
+      filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+127*sin(X/30+T*2)*cos(Y/30+T*3)':cb='${cb}+30*sin(X/100)':cr='${cr}+30*cos(Y/100)',eq=saturation=1.8:brightness=0.05`
+      break
+
+    case 'noise':
+      filter = `color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},noise=alls=50:allf=t+u,hue=h=t*30:s=1.5,eq=contrast=1.4`
+      break
+
+    case 'spectrum':
+      filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='255*pow(sin(X/W*PI*8+T*4),2)*(1-Y/H)':cb='${cb}+40*sin(X/W*PI*2)':cr='${cr}+40*cos(T*2)',eq=saturation=2:contrast=1.2`
+      break
+
+    default:
+      filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+50*sin((X+T*200)/200)':cb='${cb}+30*sin(X/300+T)':cr='${cr}+30*cos(Y/300+T)',eq=saturation=1.5`
   }
 
   const args = [
