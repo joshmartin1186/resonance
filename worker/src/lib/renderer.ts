@@ -240,6 +240,10 @@ async function generateProceduralSegment(
 
     const [width, height] = getResolution(config.resolution)
 
+    // Ensure intensity is at least 0.5 for visible output (default to 0.8)
+    const intensity = config.effectIntensity || 0.8
+    console.log(`[GPU] Intensity: ${intensity}, Colors: ${colorPalette.join(', ')}`)
+
     await renderShaderVideo({
       shaderType: segment.shaderType,
       duration,
@@ -251,7 +255,7 @@ async function generateProceduralSegment(
         secondary: colorPalette[1] || '#2A2621',
         accent: colorPalette[2] || '#F0EDE8'
       },
-      intensity: config.effectIntensity,
+      intensity,
       audioFeatures: {
         energyCurve: config.audioFeatures.energyCurve || [],
         bassCurve: config.audioFeatures.energyCurve || [],
