@@ -1,14 +1,16 @@
 # Resonance - Task Queue
 
-**Last Updated:** 2026-01-13 by Claude.ai  
-**Current Phase:** 1 - Foundation (Issues #1-7)
+**Last Updated:** 2026-01-13 by Claude.ai
+**Current Phase:** 2 - Core UI (Issues #8-10)
 
 ---
 
 ## 📋 TASK QUEUE (Claude Code: Build These)
 
 ### Next Up
-*No pending tasks for Claude Code. Phase 1 complete pending Stripe setup.*
+- Phase 3: Audio Analysis Pipeline (Issues #14-19)
+- Worker server deployment (Railway/Render)
+- Audio analysis with Essentia.js/Meyda
 
 ---
 
@@ -23,6 +25,14 @@
 ---
 
 ## ✅ COMPLETED
+
+### 2026-01-13 (Claude Code) - Phase 2 Core UI
+- [x] Created GitHub issues #8-10 for Phase 2
+- [x] Built FileUpload component with drag & drop
+- [x] Created `/create` page with 3-step project wizard
+- [x] Built `/projects/[id]` detail page with status tracking
+- [x] Added audio player and video preview
+- [x] Implemented project creation flow
 
 ### 2026-01-13 (Claude.ai) - Landing Page Polish
 - [x] Enhanced demo video placeholder with animated background and better CTA
@@ -115,3 +125,11 @@ git add -A && git commit -m "msg" && git push  # 6. Push when clean
 | #5 | Stripe integration | ✅ Done |
 | #6 | Vercel deployment | ⏳ Waiting on Stripe |
 | #7 | Landing page polish | ✅ Done |
+
+## 📊 PHASE 2 PROGRESS
+
+| Issue | Title | Status |
+|-------|-------|--------|
+| #8 | Create project wizard | ✅ Done |
+| #9 | File upload component | ✅ Done |
+| #10 | Project detail view | ✅ Done |
