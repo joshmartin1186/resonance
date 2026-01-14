@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { ProjectActions, ProjectHeaderActions } from '@/components/project-actions'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -122,19 +123,11 @@ export default async function ProjectDetailPage({ params }: PageProps) {
               Created {new Date(project.created_at).toLocaleDateString()}
             </p>
           </div>
-          <div className="flex gap-3">
-            {project.status === 'draft' && (
-              <Button>Start Generation</Button>
-            )}
-            {project.status === 'completed' && project.video_url && (
-              <Link href={project.video_url} target="_blank">
-                <Button>Download Video</Button>
-              </Link>
-            )}
-            {project.status === 'failed' && (
-              <Button>Retry Generation</Button>
-            )}
-          </div>
+          <ProjectHeaderActions
+            projectId={project.id}
+            status={project.status}
+            videoUrl={project.video_url}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -255,24 +248,12 @@ export default async function ProjectDetailPage({ params }: PageProps) {
               <CardHeader>
                 <CardTitle className="text-lg">Actions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {project.status === 'completed' && (
-                  <>
-                    <Button variant="secondary" className="w-full">
-                      Regenerate
-                    </Button>
-                    {project.video_url && (
-                      <Link href={project.video_url} target="_blank" className="block">
-                        <Button variant="secondary" className="w-full">
-                          Download
-                        </Button>
-                      </Link>
-                    )}
-                  </>
-                )}
-                <Button variant="ghost" className="w-full text-[#C2410C] hover:text-[#C2410C] hover:bg-[#FEE2E2]">
-                  Delete Project
-                </Button>
+              <CardContent>
+                <ProjectActions
+                  projectId={project.id}
+                  status={project.status}
+                  videoUrl={project.video_url}
+                />
               </CardContent>
             </Card>
 
