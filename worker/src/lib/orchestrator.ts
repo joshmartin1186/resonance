@@ -33,6 +33,7 @@ export interface VisualSegment {
   effects: EffectAssignment[]
   footageIndex?: number
   generativeType?: 'particles' | 'waves' | 'geometric' | 'noise' | 'spectrum'
+  shaderType?: 'perlin-noise' | 'particle-flow' | 'fractal-mandelbrot' | 'voronoi-cells' | 'reaction-diffusion'
   transition: {
     type: 'cut' | 'fade' | 'dissolve' | 'wipe' | 'zoom'
     duration: number
@@ -94,6 +95,16 @@ PATTERN:
 - grain: Film texture, params: {amount: 0-50}
 - vignette: Dark edges, params: {angle: 0-1.5}
 - scanlines: CRT/retro, params: {spacing: 2-10, opacity: 0-1}
+
+GENERATIVE SHADERS (use shaderType instead of generativeType):
+- perlin-noise: Organic flowing patterns with fractal noise layers, audio-reactive distortions
+- particle-flow: GPU particle system guided by Perlin noise flow fields, density varies with energy
+- fractal-mandelbrot: Dynamic Mandelbrot fractal zoom, bass-driven rotation, mid-freq view shifts
+- voronoi-cells: Organic cellular patterns with animated boundaries, pulsing with bass
+- reaction-diffusion: Biological pattern formation (coral/tiger stripes), smooth organic morphing
+
+Use shaderType for sophisticated generative visuals that respond to audio in complex ways.
+Use generativeType only for simple legacy patterns (particles, waves, geometric, noise, spectrum).
 `
 
 // System prompt for Claude
@@ -104,6 +115,7 @@ const SYSTEM_PROMPT = `You are an AI cinematographer and visual artist creating 
 3. SYNC TO SUBTLETIES: React to beats, transients, pitch changes, dynamics
 4. BUILD NARRATIVE: Create a visual story with beginning, development, climax, resolution
 5. BALANCE ELEMENTS: Mix footage, effects, and generative elements appropriately
+6. USE SOPHISTICATED VISUALS: Prefer shaderType over generativeType for stunning procedural graphics
 
 You respond ONLY with valid JSON matching the VisualPlan schema. No explanations.
 
@@ -113,7 +125,15 @@ Audio sync options let effects react to music in real-time:
 - energy: Overall loudness (good for brightness, scale, particle count)
 - transients: Sudden sounds like drums (good for flashes, glitches)
 - pitch: Melodic content (good for hue rotation, vertical position)
-- tempo: BPM (good for motion blur, transition speed)`
+- tempo: BPM (good for motion blur, transition speed)
+
+IMPORTANT: When no footage is available, always use shaderType (not generativeType) to create sophisticated visuals.
+Choose shaders based on mood:
+- perlin-noise: Calm, flowing, organic, meditative
+- particle-flow: Energetic, dynamic, cosmic, explosive
+- fractal-mandelbrot: Psychedelic, infinite, mathematical, hypnotic
+- voronoi-cells: Structured, biological, cellular, pulsing
+- reaction-diffusion: Natural, organic growth patterns, evolving textures`
 
 /**
  * Generate a visual plan using Claude
@@ -352,7 +372,7 @@ function createSegmentFromSection(
     description: `${section.type} section with ${emotionalTone} energy`,
     effects: getEffectsForTone(emotionalTone, style, section.energy),
     footageIndex: footageCount > 0 ? index % footageCount : undefined,
-    generativeType: footageCount === 0 ? getGenerativeType(section.energy) : undefined,
+    shaderType: footageCount === 0 ? getShaderType(emotionalTone, style) : undefined,
     transition: {
       type: index === 0 ? 'fade' : (section.energy > 0.7 ? 'cut' : 'dissolve'),
       duration: section.energy > 0.7 ? 0.1 : 0.5
@@ -375,15 +395,17 @@ function createTimeBasedSegments(duration: number, style: string, footageCount: 
       : progress < 0.7 ? 0.6 + (progress - 0.3) * 0.5
       : 0.9 - (progress - 0.7) * 1.5
 
+    const emotionalTone = getEmotionalTone(energy)
+
     segments.push({
       startTime,
       endTime,
       musicalContext: progress < 0.3 ? 'intro' : progress < 0.7 ? 'verse' : 'outro',
-      emotionalTone: getEmotionalTone(energy),
+      emotionalTone,
       description: `Segment ${i + 1}`,
-      effects: getEffectsForTone(getEmotionalTone(energy), style, energy),
+      effects: getEffectsForTone(emotionalTone, style, energy),
       footageIndex: footageCount > 0 ? i % footageCount : undefined,
-      generativeType: footageCount === 0 ? getGenerativeType(energy) : undefined,
+      shaderType: footageCount === 0 ? getShaderType(emotionalTone, style) : undefined,
       transition: {
         type: i === 0 ? 'fade' : 'dissolve',
         duration: 0.5
@@ -457,6 +479,40 @@ function getEffectsForTone(tone: string, style: string, energy: number): EffectA
   return effects
 }
 
+// NEW: Intelligent shader selection based on mood and style
+function getShaderType(
+  emotionalTone: string,
+  style: string
+): 'perlin-noise' | 'particle-flow' | 'fractal-mandelbrot' | 'voronoi-cells' | 'reaction-diffusion' {
+  // Psychedelic style favors fractals
+  if (style === 'psychedelic') {
+    if (emotionalTone === 'intense' || emotionalTone === 'energetic') return 'fractal-mandelbrot'
+    return 'reaction-diffusion'
+  }
+
+  // Abstract style uses varied shaders
+  if (style === 'abstract') {
+    if (emotionalTone === 'intense') return 'particle-flow'
+    if (emotionalTone === 'energetic') return 'voronoi-cells'
+    return 'perlin-noise'
+  }
+
+  // Minimal style prefers calm patterns
+  if (style === 'minimal') {
+    return emotionalTone === 'serene' || emotionalTone === 'contemplative'
+      ? 'perlin-noise'
+      : 'voronoi-cells'
+  }
+
+  // Cinematic and organic styles
+  if (emotionalTone === 'intense') return 'particle-flow'
+  if (emotionalTone === 'energetic') return 'voronoi-cells'
+  if (emotionalTone === 'balanced') return 'reaction-diffusion'
+  if (emotionalTone === 'contemplative') return 'perlin-noise'
+  return 'perlin-noise' // serene default
+}
+
+// LEGACY: Keep for backward compatibility
 function getGenerativeType(energy: number): 'particles' | 'waves' | 'geometric' | 'noise' | 'spectrum' {
   if (energy > 0.7) return 'particles'
   if (energy > 0.5) return 'spectrum'

@@ -2,6 +2,7 @@ import { mkdirSync, existsSync, unlinkSync, readdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { runFFmpeg, buildFilterChain, downloadFile, getVideoMetadata, concatenateVideos, imageToVideo } from './ffmpeg.js'
 import type { AudioFeatures } from './audio-analyzer.js'
+import { buildShaderFilter, type ShaderType } from './shader-manager.js'
 
 // Types
 export interface RenderConfig {
@@ -29,6 +30,7 @@ export interface VisualSegment {
   effects: EffectApplication[]
   footageIndex?: number
   generativeType?: GenerativeType
+  shaderType?: ShaderType  // New: use sophisticated shaders
   transitionIn?: TransitionType
   transitionOut?: TransitionType
 }
@@ -205,7 +207,7 @@ async function processFootageSegment(
 }
 
 /**
- * Generate procedural/generative content with color
+ * Generate procedural/generative content with sophisticated shaders
  */
 async function generateProceduralSegment(
   outputPath: string,
@@ -216,74 +218,57 @@ async function generateProceduralSegment(
   const duration = segment.endTime - segment.startTime
   const fps = 30
 
-  // Parse primary color for use in filters
-  const primaryColor = colorPalette[0] || '#C45D3A'
-  const r = parseInt(primaryColor.slice(1, 3), 16)
-  const g = parseInt(primaryColor.slice(3, 5), 16)
-  const b = parseInt(primaryColor.slice(5, 7), 16)
-
-  // Convert RGB to YUV Cb/Cr for geq filter (approximate)
-  const cb = Math.round(128 + (-0.169 * r - 0.331 * g + 0.500 * b))
-  const cr = Math.round(128 + (0.500 * r - 0.419 * g - 0.081 * b))
-
-  // Generate based on type
+  // Use sophisticated shader system if shaderType is specified
   let filter: string
 
-  switch (segment.generativeType) {
-    case 'particles':
-      // Colorful particle system with gradient background
-      filter = `
-        color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},
-        noise=alls=80:allf=t,
-        gblur=sigma=3,
-        eq=brightness=0.1:contrast=1.5:saturation=1.5
-      `.replace(/\s+/g, '')
-      break
+  if (segment.shaderType) {
+    // NEW: Use sophisticated GLSL-approximated shaders
+    filter = buildShaderFilter({
+      type: segment.shaderType,
+      duration,
+      audioFeatures: config.audioFeatures,
+      colors: {
+        primary: colorPalette[0] || '#C45D3A',
+        secondary: colorPalette[1] || '#2A2621',
+        accent: colorPalette[2] || '#F0EDE8'
+      },
+      intensity: config.effectIntensity
+    }, config.resolution)
+  } else {
+    // LEGACY: Fallback to simple patterns for backward compatibility
+    const primaryColor = colorPalette[0] || '#C45D3A'
+    const r = parseInt(primaryColor.slice(1, 3), 16)
+    const g = parseInt(primaryColor.slice(3, 5), 16)
+    const b = parseInt(primaryColor.slice(5, 7), 16)
 
-    case 'waves':
-      // Colorful audio waveform visualization
-      filter = `
-        nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='128+127*sin(2*PI*(X/W)*4+T*2)':cb='${cb}+20*sin(T*3)':cr='${cr}+20*cos(T*2)',
-        eq=saturation=2:contrast=1.3
-      `.replace(/\s+/g, '')
-      break
+    // Convert RGB to YUV Cb/Cr for geq filter
+    const cb = Math.round(128 + (-0.169 * r - 0.331 * g + 0.500 * b))
+    const cr = Math.round(128 + (0.500 * r - 0.419 * g - 0.081 * b))
 
-    case 'geometric':
-      // Colorful geometric patterns - use smooth sine patterns instead of conditionals
-      filter = `
-        nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='128+127*sin(X/30+T*2)*cos(Y/30+T*3)':cb='${cb}+30*sin(X/100)':cr='${cr}+30*cos(Y/100)',
-        eq=saturation=1.8:brightness=0.05
-      `.replace(/\s+/g, '')
-      break
+    switch (segment.generativeType) {
+      case 'particles':
+        filter = `color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},noise=alls=80:allf=t,gblur=sigma=3,eq=brightness=0.1:contrast=1.5:saturation=1.5`
+        break
 
-    case 'noise':
-      // Colorful animated noise
-      filter = `
-        color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},
-        noise=alls=50:allf=t+u,
-        hue=h=t*30:s=1.5,
-        eq=contrast=1.4
-      `.replace(/\s+/g, '')
-      break
+      case 'waves':
+        filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+127*sin(2*PI*(X/W)*4+T*2)':cb='${cb}+20*sin(T*3)':cr='${cr}+20*cos(T*2)',eq=saturation=2:contrast=1.3`
+        break
 
-    case 'spectrum':
-      // Colorful spectrum bars - use smooth gradient instead of conditionals
-      filter = `
-        nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='255*pow(sin(X/W*PI*8+T*4),2)*(1-Y/H)':cb='${cb}+40*sin(X/W*PI*2)':cr='${cr}+40*cos(T*2)',
-        eq=saturation=2:contrast=1.2
-      `.replace(/\s+/g, '')
-      break
+      case 'geometric':
+        filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+127*sin(X/30+T*2)*cos(Y/30+T*3)':cb='${cb}+30*sin(X/100)':cr='${cr}+30*cos(Y/100)',eq=saturation=1.8:brightness=0.05`
+        break
 
-    default:
-      // Animated gradient
-      filter = `
-        nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='128+50*sin((X+T*200)/200)':cb='${cb}+30*sin(X/300+T)':cr='${cr}+30*cos(Y/300+T)',
-        eq=saturation=1.5
-      `.replace(/\s+/g, '')
+      case 'noise':
+        filter = `color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},noise=alls=50:allf=t+u,hue=h=t*30:s=1.5,eq=contrast=1.4`
+        break
+
+      case 'spectrum':
+        filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='255*pow(sin(X/W*PI*8+T*4),2)*(1-Y/H)':cb='${cb}+40*sin(X/W*PI*2)':cr='${cr}+40*cos(T*2)',eq=saturation=2:contrast=1.2`
+        break
+
+      default:
+        filter = `nullsrc=s=1920x1080:d=${duration}:r=${fps},geq=lum='128+50*sin((X+T*200)/200)':cb='${cb}+30*sin(X/300+T)':cr='${cr}+30*cos(Y/300+T)',eq=saturation=1.5`
+    }
   }
 
   const args = [
