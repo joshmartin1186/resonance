@@ -1,7 +1,7 @@
 # Resonance - Task Queue
 
 **Last Updated:** 2026-01-13 by Claude.ai
-**Current Phase:** 2 - Core UI (Issues #8-10)
+**Current Phase:** 4 - Effect Library & Rendering (Issues #14-16)
 
 ---
 
@@ -10,7 +10,8 @@
 ### Next Up
 - Deploy worker to Railway/Render
 - Set up Redis (Upstash)
-- Implement real AI video generation
+- Run effects migration in Supabase
+- Phase 5: AI Orchestration with Claude
 
 ---
 
@@ -25,6 +26,15 @@
 ---
 
 ## ✅ COMPLETED
+
+### 2026-01-13 (Claude Code) - Phase 4 Effect Library & Rendering
+- [x] Created GitHub issues #14-16 for Phase 4
+- [x] Created database migration for effects library
+- [x] Built effect_categories and effects tables with sample effects
+- [x] Created TypeScript types for effects system
+- [x] Built FFmpeg wrapper utility with filter chain support
+- [x] Created three-layer rendering pipeline (footage, effects, generative)
+- [x] Implemented procedural generation (particles, waves, geometric)
 
 ### 2026-01-13 (Claude Code) - Phase 3 Audio Analysis Pipeline
 - [x] Created GitHub issues #11-13 for Phase 3
@@ -151,3 +161,11 @@ git add -A && git commit -m "msg" && git push  # 6. Push when clean
 | #11 | Worker server setup | ✅ Done |
 | #12 | Audio analysis module | ✅ Done |
 | #13 | Generation API endpoints | ✅ Done |
+
+## 📊 PHASE 4 PROGRESS
+
+| Issue | Title | Status |
+|-------|-------|--------|
+| #14 | Effect library database | ✅ Done |
+| #15 | FFmpeg effect templates | ✅ Done |
+| #16 | Three-layer compositing | ✅ Done |
