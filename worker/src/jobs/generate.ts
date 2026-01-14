@@ -2,6 +2,7 @@ import { Job } from 'bullmq'
 import { GenerationJobData } from '../lib/queue.js'
 import { supabase, updateProjectStatus, getProject } from '../lib/supabase.js'
 import { analyzeAudio, detectSubtleCues } from '../lib/audio-analyzer.js'
+import { decryptApiKey, getEncryptionSecret } from '../lib/encryption.js'
 import {
   generateVisualPlan as generateAIVisualPlan,
   generateSeed,
@@ -76,6 +77,9 @@ export async function processGenerationJob(job: Job<GenerationJobData>) {
     // Fetch footage info if any
     const footageInfo = await getFootageInfo(projectId)
 
+    // Fetch the user's Anthropic API key
+    const anthropicApiKey = await getUserApiKey(project.organization_id, 'anthropic')
+
     const orchestrationInput: OrchestrationInput = {
       audioFeatures,
       prompt: project.prompt || 'Create a visual journey',
@@ -83,13 +87,14 @@ export async function processGenerationJob(job: Job<GenerationJobData>) {
       footage: footageInfo,
       effectIntensity: project.effect_intensity ?? 0.5,
       footageVisibility: project.footage_visibility ?? 0.6,
-      seed
+      seed,
+      anthropicApiKey
     }
 
     let visualPlan: VisualPlan
     try {
       visualPlan = await generateAIVisualPlan(orchestrationInput)
-      console.log('AI visual plan generated successfully')
+      console.log(anthropicApiKey ? 'AI visual plan generated successfully' : 'Fallback visual plan generated (no API key)')
     } catch (aiError) {
       console.warn('AI orchestration failed, using fallback:', aiError)
       visualPlan = generateFallbackVisualPlan(orchestrationInput)
@@ -329,4 +334,54 @@ async function simulateRendering(
     await new Promise(resolve => setTimeout(resolve, stepDuration))
     await job.updateProgress(Math.round(startProgress + stepSize * (i + 1)))
   }
+}
+
+/**
+ * Get a user's decrypted API key for a specific provider
+ */
+async function getUserApiKey(
+  organizationId: string,
+  provider: 'anthropic' | 'openai' | 'replicate' | 'stability'
+): Promise<string | undefined> {
+  try {
+    const { data: keyRecord } = await supabase
+      .from('user_api_keys')
+      .select('encrypted_key, is_valid')
+      .eq('organization_id', organizationId)
+      .eq('provider', provider)
+      .single()
+
+    if (!keyRecord || !keyRecord.is_valid) {
+      console.log(`No valid ${provider} API key found for organization ${organizationId}`)
+      return undefined
+    }
+
+    // Decrypt the key
+    const encryptionSecret = getEncryptionSecret()
+    const decryptedKey = decryptApiKey(keyRecord.encrypted_key, encryptionSecret)
+
+    return decryptedKey
+  } catch (error) {
+    console.error(`Failed to fetch ${provider} API key:`, error)
+    return undefined
+  }
+}
+
+/**
+ * Mark an API key as invalid (e.g., after auth failure)
+ */
+async function markApiKeyInvalid(
+  organizationId: string,
+  provider: string,
+  error: string
+): Promise<void> {
+  await supabase
+    .from('user_api_keys')
+    .update({
+      is_valid: false,
+      last_error: error,
+      updated_at: new Date().toISOString()
+    })
+    .eq('organization_id', organizationId)
+    .eq('provider', provider)
 }

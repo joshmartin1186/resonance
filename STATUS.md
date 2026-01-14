@@ -10,8 +10,7 @@
 ### Next Up
 - Deploy worker to Railway/Render
 - Set up Redis (Upstash)
-- Run effects migration in Supabase
-- Add ANTHROPIC_API_KEY to worker environment
+- Run migrations in Supabase (effects + api_keys)
 - Phase 6: User Feedback & Iteration
 
 ---
@@ -27,6 +26,16 @@
 ---
 
 ## ✅ COMPLETED
+
+### 2026-01-13 (Claude Code) - User API Keys System
+- [x] Created database migration for user_api_keys table
+- [x] Built encrypted key storage with AES-256-GCM
+- [x] Created TypeScript types for API providers
+- [x] Built API keys management endpoints (/api/keys)
+- [x] Created ApiKeysSettings UI component
+- [x] Added API Keys section to settings page
+- [x] Updated orchestrator to use per-user API keys
+- [x] Users now provide their own Anthropic keys (BYOK model)
 
 ### 2026-01-13 (Claude Code) - Phase 5 AI Orchestration
 - [x] Created GitHub issues #17-19 for Phase 5

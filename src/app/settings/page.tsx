@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CheckoutButton, PortalButton } from '@/components/billing-button'
+import { ApiKeysSettings } from '@/components/settings/ApiKeysSettings'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -229,8 +230,8 @@ export default async function SettingsPage() {
               <CardContent>
                 <div className="space-y-3">
                   {teamMembers?.map((member) => (
-                    <div 
-                      key={member.id} 
+                    <div
+                      key={member.id}
                       className="flex items-center justify-between py-3 border-b border-[#E2E0DB] last:border-0"
                     >
                       <div>
@@ -252,6 +253,19 @@ export default async function SettingsPage() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* API Keys Section - Admin and Owner Only */}
+          {isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle>API Keys</CardTitle>
+                <CardDescription>Connect your AI provider accounts for video generation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ApiKeysSettings />
               </CardContent>
             </Card>
           )}

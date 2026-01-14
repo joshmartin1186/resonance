@@ -1,10 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import type { AudioFeatures } from './audio-analyzer.js'
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
-})
+// Anthropic client will be initialized per-request with user's API key
 
 // Types
 export interface FootageInfo {
@@ -24,6 +21,7 @@ export interface OrchestrationInput {
   effectIntensity: number // 0-1
   footageVisibility: number // 0-1
   seed?: string
+  anthropicApiKey?: string // User's API key (decrypted)
 }
 
 export interface VisualSegment {
@@ -130,8 +128,20 @@ export async function generateVisualPlan(
     footage,
     effectIntensity,
     footageVisibility,
-    seed
+    seed,
+    anthropicApiKey
   } = input
+
+  // Check if we have an API key
+  if (!anthropicApiKey) {
+    console.log('No Anthropic API key provided, using fallback plan generator')
+    return generateFallbackPlan(input)
+  }
+
+  // Initialize Anthropic client with user's API key
+  const anthropic = new Anthropic({
+    apiKey: anthropicApiKey
+  })
 
   // Build the user prompt
   const userPrompt = buildUserPrompt(input)
