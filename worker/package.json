@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
     "@supabase/supabase-js": "^2.90.1",
     "bullmq": "^5.34.0",
     "ioredis": "^5.4.1",
