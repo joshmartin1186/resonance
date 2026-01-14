@@ -162,7 +162,7 @@ export async function generateVisualPlan(
     })
 
     // Extract text content
-    const textContent = response.content.find(c => c.type === 'text')
+    const textContent = response.content.find((c: { type: string }) => c.type === 'text')
     if (!textContent || textContent.type !== 'text') {
       throw new Error('No text response from Claude')
     }
@@ -187,8 +187,8 @@ function buildUserPrompt(input: OrchestrationInput): string {
   const { audioFeatures, prompt, style, footage, effectIntensity, footageVisibility } = input
 
   const sections = audioFeatures.sections?.map(s => ({
-    start: s.start.toFixed(1),
-    end: s.end.toFixed(1),
+    start: s.startTime.toFixed(1),
+    end: s.endTime.toFixed(1),
     type: s.type,
     energy: s.energy.toFixed(2)
   })) || []
@@ -337,7 +337,7 @@ function generateFallbackPlan(input: OrchestrationInput): VisualPlan {
 }
 
 function createSegmentFromSection(
-  section: { start: number; end: number; type: string; energy: number },
+  section: { startTime: number; endTime: number; type: string; energy: number },
   index: number,
   style: string,
   footageCount: number
@@ -345,8 +345,8 @@ function createSegmentFromSection(
   const emotionalTone = getEmotionalTone(section.energy)
 
   return {
-    startTime: section.start,
-    endTime: section.end,
+    startTime: section.startTime,
+    endTime: section.endTime,
     musicalContext: section.type,
     emotionalTone,
     description: `${section.type} section with ${emotionalTone} energy`,

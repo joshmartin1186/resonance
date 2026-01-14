@@ -1,38 +1,34 @@
 import 'dotenv/config'
-import { createWorker, QUEUE_NAMES, redis } from './lib/queue.js'
+import { createDatabaseWorker } from './lib/queue.js'
 import { processGenerationJob } from './jobs/generate.js'
 
 console.log('🎬 Resonance Worker Starting...')
 
 // Validate required environment variables
-const requiredEnvVars = ['REDIS_URL', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']
+const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
-    console.error(`Missing required environment variable: ${envVar}`)
+    console.error(`❌ Missing required environment variable: ${envVar}`)
     process.exit(1)
   }
 }
 
-// Get concurrency from env or default to 2
-const concurrency = parseInt(process.env.WORKER_CONCURRENCY || '2', 10)
+// Check mode
+const USE_REDIS = !!process.env.REDIS_URL
+console.log(`📡 Mode: ${USE_REDIS ? 'Redis/BullMQ' : 'Database Polling'}`)
 
-// Create the generation worker
-const generationWorker = createWorker(
-  QUEUE_NAMES.GENERATION,
-  processGenerationJob,
-  concurrency
-)
+// Get concurrency from env or default to 1
+const concurrency = parseInt(process.env.WORKER_CONCURRENCY || '1', 10)
 
-console.log(`✅ Generation worker started with concurrency ${concurrency}`)
-console.log(`📡 Connected to Redis`)
+// Create the generation worker (database polling mode)
+const worker = createDatabaseWorker(processGenerationJob, concurrency)
+
+console.log(`✅ Worker started with concurrency ${concurrency}`)
 
 // Graceful shutdown
 async function shutdown() {
   console.log('\n🛑 Shutting down worker...')
-
-  await generationWorker.close()
-  await redis.quit()
-
+  await worker.close()
   console.log('👋 Worker stopped')
   process.exit(0)
 }
@@ -42,17 +38,4 @@ process.on('SIGINT', shutdown)
 
 // Keep the process running
 console.log('🚀 Worker ready and waiting for jobs...')
-
-// Health check - log queue stats every 30 seconds
-setInterval(async () => {
-  try {
-    const waitingCount = await redis.llen(`bull:${QUEUE_NAMES.GENERATION}:wait`)
-    const activeCount = await redis.llen(`bull:${QUEUE_NAMES.GENERATION}:active`)
-
-    if (waitingCount > 0 || activeCount > 0) {
-      console.log(`📊 Queue status: ${waitingCount} waiting, ${activeCount} active`)
-    }
-  } catch {
-    // Ignore errors in health check
-  }
-}, 30000)
+console.log('   Polling database every 5 seconds for queued projects')

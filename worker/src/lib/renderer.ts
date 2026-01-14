@@ -115,11 +115,12 @@ export async function renderVideo(
           config
         )
       } else if (segment.generativeType) {
-        // Generate procedural content
+        // Generate procedural content with colors
         await generateProceduralSegment(
           segmentPath,
           segment,
-          config
+          config,
+          visualPlan.colorPalette
         )
       } else {
         // Black/solid color segment
@@ -204,68 +205,84 @@ async function processFootageSegment(
 }
 
 /**
- * Generate procedural/generative content
+ * Generate procedural/generative content with color
  */
 async function generateProceduralSegment(
   outputPath: string,
   segment: VisualSegment,
-  config: RenderConfig
+  config: RenderConfig,
+  colorPalette: string[] = ['#C45D3A', '#2A2621', '#F0EDE8']
 ): Promise<void> {
   const duration = segment.endTime - segment.startTime
   const fps = 30
-  const frames = Math.ceil(duration * fps)
+
+  // Parse primary color for use in filters
+  const primaryColor = colorPalette[0] || '#C45D3A'
+  const r = parseInt(primaryColor.slice(1, 3), 16)
+  const g = parseInt(primaryColor.slice(3, 5), 16)
+  const b = parseInt(primaryColor.slice(5, 7), 16)
+
+  // Convert RGB to YUV Cb/Cr for geq filter (approximate)
+  const cb = Math.round(128 + (-0.169 * r - 0.331 * g + 0.500 * b))
+  const cr = Math.round(128 + (0.500 * r - 0.419 * g - 0.081 * b))
 
   // Generate based on type
   let filter: string
 
   switch (segment.generativeType) {
     case 'particles':
-      // Simulated particles using FFmpeg's noise and blur
+      // Colorful particle system with gradient background
       filter = `
-        nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='random(1)*255':cb=128:cr=128,
-        gblur=sigma=2,
-        colorkey=black:0.3:0.2
+        color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},
+        noise=alls=80:allf=t,
+        gblur=sigma=3,
+        eq=brightness=0.1:contrast=1.5:saturation=1.5
       `.replace(/\s+/g, '')
       break
 
     case 'waves':
-      // Audio waveform visualization
+      // Colorful audio waveform visualization
       filter = `
         nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='128+127*sin(2*PI*(X/W)*4+T*2)':cb=128:cr=128
+        geq=lum='128+127*sin(2*PI*(X/W)*4+T*2)':cb='${cb}+20*sin(T*3)':cr='${cr}+20*cos(T*2)',
+        eq=saturation=2:contrast=1.3
       `.replace(/\s+/g, '')
       break
 
     case 'geometric':
-      // Geometric patterns
+      // Colorful geometric patterns - use smooth sine patterns instead of conditionals
       filter = `
         nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='if(mod(X+Y+T*100,100)<50,200,50)':cb=128:cr=128
+        geq=lum='128+127*sin(X/30+T*2)*cos(Y/30+T*3)':cb='${cb}+30*sin(X/100)':cr='${cr}+30*cos(Y/100)',
+        eq=saturation=1.8:brightness=0.05
       `.replace(/\s+/g, '')
       break
 
     case 'noise':
-      // Perlin-like noise
+      // Colorful animated noise
       filter = `
-        nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        noise=alls=30:allf=t+u
+        color=c=0x${primaryColor.slice(1)}:s=1920x1080:d=${duration}:r=${fps},
+        noise=alls=50:allf=t+u,
+        hue=h=t*30:s=1.5,
+        eq=contrast=1.4
       `.replace(/\s+/g, '')
       break
 
     case 'spectrum':
-      // Spectrum bars (simplified)
+      // Colorful spectrum bars - use smooth gradient instead of conditionals
       filter = `
         nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='if(Y>H-H*abs(sin(X/W*PI*8+T*4))*0.8,255,0)':cb=128:cr=128
+        geq=lum='255*pow(sin(X/W*PI*8+T*4),2)*(1-Y/H)':cb='${cb}+40*sin(X/W*PI*2)':cr='${cr}+40*cos(T*2)',
+        eq=saturation=2:contrast=1.2
       `.replace(/\s+/g, '')
       break
 
     default:
-      // Default gradient
+      // Animated gradient
       filter = `
         nullsrc=s=1920x1080:d=${duration}:r=${fps},
-        geq=lum='X*255/W':cb=128:cr=128
+        geq=lum='128+50*sin((X+T*200)/200)':cb='${cb}+30*sin(X/300+T)':cr='${cr}+30*cos(Y/300+T)',
+        eq=saturation=1.5
       `.replace(/\s+/g, '')
   }
 
@@ -383,8 +400,8 @@ export function generateVisualPlan(
       const section = sections[i]
 
       segments.push({
-        startTime: section.start,
-        endTime: section.end,
+        startTime: section.startTime,
+        endTime: section.endTime,
         effects: getEffectsForSection(section, style),
         footageIndex: footageCount > 0 ? i % footageCount : undefined,
         generativeType: footageCount === 0 ? getGenerativeForSection(section) : undefined,

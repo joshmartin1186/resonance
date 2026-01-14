@@ -86,6 +86,17 @@ export default function CreateProjectPage() {
         return
       }
 
+      // Get user's organization
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single()
+
+      if (userError || !userData?.organization_id) {
+        throw new Error('User organization not found. Please contact support.')
+      }
+
       // Create project
       const { data: project, error: projectError } = await supabase
         .from('projects')
@@ -96,7 +107,8 @@ export default function CreateProjectPage() {
           footage_urls: projectData.footageUrls,
           style: projectData.style,
           status: 'draft',
-          user_id: user.id
+          user_id: user.id,
+          organization_id: userData.organization_id
         })
         .select('id')
         .single()

@@ -1,21 +1,13 @@
-import { Queue, Worker, Job } from 'bullmq'
-import Redis from 'ioredis'
+/**
+ * Queue system with two modes:
+ * 1. Local/Dev: Database polling (no Redis required)
+ * 2. Production: BullMQ with Redis (optional, for scale)
+ */
 
-if (!process.env.REDIS_URL) {
-  throw new Error('REDIS_URL is required')
-}
+import { supabase } from './supabase.js'
 
-// Create Redis connection
-export const redis = new Redis(process.env.REDIS_URL, {
-  maxRetriesPerRequest: null
-})
-
-// Queue names
-export const QUEUE_NAMES = {
-  GENERATION: 'generation',
-  ANALYSIS: 'analysis',
-  CLEANUP: 'cleanup'
-} as const
+// Check if Redis is configured
+const USE_REDIS = !!process.env.REDIS_URL
 
 // Job data types
 export interface GenerationJobData {
@@ -33,69 +25,175 @@ export interface CleanupJobData {
   tempFiles: string[]
 }
 
-// Create queues
-export const generationQueue = new Queue<GenerationJobData>(QUEUE_NAMES.GENERATION, {
-  connection: redis,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 5000
-    },
-    removeOnComplete: {
-      age: 3600 * 24, // Keep completed jobs for 24 hours
-      count: 100
-    },
-    removeOnFail: {
-      age: 3600 * 24 * 7 // Keep failed jobs for 7 days
-    }
-  }
-})
-
-export const analysisQueue = new Queue<AnalysisJobData>(QUEUE_NAMES.ANALYSIS, {
-  connection: redis
-})
-
-export const cleanupQueue = new Queue<CleanupJobData>(QUEUE_NAMES.CLEANUP, {
-  connection: redis
-})
-
-// Helper to add a generation job
-export async function queueGeneration(projectId: string, userId: string) {
-  const job = await generationQueue.add(
-    'generate-video',
-    { projectId, userId },
-    {
-      jobId: `gen-${projectId}-${Date.now()}`
-    }
-  )
-
-  console.log(`Queued generation job ${job.id} for project ${projectId}`)
-  return job
+// Mock Job interface for compatibility
+export interface Job<T = unknown> {
+  id: string
+  data: T
+  updateProgress: (progress: number) => Promise<void>
 }
 
-// Helper to create a worker
-export function createWorker<T, R = void>(
-  queueName: string,
-  processor: (job: Job<T>) => Promise<R>,
+// Queue names
+export const QUEUE_NAMES = {
+  GENERATION: 'generation',
+  ANALYSIS: 'analysis',
+  CLEANUP: 'cleanup'
+} as const
+
+/**
+ * Database polling worker (no Redis needed)
+ * Polls Supabase for queued projects and processes them
+ */
+export class DatabasePoller {
+  private isRunning = false
+  private pollInterval: NodeJS.Timeout | null = null
+  private processor: ((job: Job<GenerationJobData>) => Promise<unknown>) | null = null
+  private concurrency: number
+
+  constructor(concurrency = 1) {
+    this.concurrency = concurrency
+  }
+
+  /**
+   * Start polling for jobs
+   */
+  start(processor: (job: Job<GenerationJobData>) => Promise<unknown>) {
+    this.processor = processor
+    this.isRunning = true
+    this.poll()
+
+    // Poll every 5 seconds
+    this.pollInterval = setInterval(() => this.poll(), 5000)
+
+    console.log('📡 Database poller started')
+  }
+
+  /**
+   * Stop polling
+   */
+  async close() {
+    this.isRunning = false
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval)
+      this.pollInterval = null
+    }
+    console.log('Database poller stopped')
+  }
+
+  /**
+   * Poll for queued jobs
+   */
+  private async poll() {
+    if (!this.isRunning || !this.processor) return
+
+    try {
+      // Find queued projects
+      const { data: projects, error } = await supabase
+        .from('projects')
+        .select('id, user_id')
+        .eq('status', 'queued')
+        .order('created_at', { ascending: true })
+        .limit(this.concurrency)
+
+      if (error) {
+        console.error('Failed to poll for jobs:', error)
+        return
+      }
+
+      if (!projects || projects.length === 0) {
+        return // No jobs to process
+      }
+
+      // Process each project
+      for (const project of projects) {
+        // Mark as processing immediately to prevent double-processing
+        const { error: updateError } = await supabase
+          .from('projects')
+          .update({ status: 'analyzing' })
+          .eq('id', project.id)
+          .eq('status', 'queued') // Only update if still queued
+
+        if (updateError) {
+          console.error(`Failed to claim project ${project.id}:`, updateError)
+          continue
+        }
+
+        console.log(`🎬 Processing project ${project.id}`)
+
+        // Create a mock job object
+        const job: Job<GenerationJobData> = {
+          id: `db-${project.id}-${Date.now()}`,
+          data: {
+            projectId: project.id,
+            userId: project.user_id
+          },
+          updateProgress: async (progress: number) => {
+            // Update progress in database (optional)
+            await supabase
+              .from('projects')
+              .update({
+                analysis_data: {
+                  progress,
+                  updatedAt: new Date().toISOString()
+                }
+              })
+              .eq('id', project.id)
+          }
+        }
+
+        // Process the job
+        try {
+          await this.processor(job)
+          console.log(`✅ Project ${project.id} completed`)
+        } catch (err) {
+          console.error(`❌ Project ${project.id} failed:`, err)
+          // Status is already updated by the processor on failure
+        }
+      }
+    } catch (err) {
+      console.error('Poll error:', err)
+    }
+  }
+}
+
+// Redis/BullMQ exports (only used if REDIS_URL is set)
+let redis: unknown = null
+let generationQueue: unknown = null
+
+if (USE_REDIS) {
+  // Dynamic import for Redis (only when needed)
+  const loadRedis = async () => {
+    const Redis = (await import('ioredis')).default
+    const { Queue, Worker } = await import('bullmq')
+
+    redis = new Redis(process.env.REDIS_URL!, {
+      maxRetriesPerRequest: null
+    })
+
+    generationQueue = new Queue<GenerationJobData>(QUEUE_NAMES.GENERATION, {
+      connection: redis as never,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5000
+        }
+      }
+    })
+
+    return { redis, generationQueue, Worker }
+  }
+
+  loadRedis().catch(console.error)
+}
+
+export { redis, generationQueue }
+
+// Helper to create a worker (database polling mode)
+export function createDatabaseWorker(
+  processor: (job: Job<GenerationJobData>) => Promise<unknown>,
   concurrency = 1
-) {
-  const worker = new Worker<T>(queueName, processor, {
-    connection: redis,
-    concurrency
-  })
-
-  worker.on('completed', (job) => {
-    console.log(`Job ${job.id} completed successfully`)
-  })
-
-  worker.on('failed', (job, err) => {
-    console.error(`Job ${job?.id} failed:`, err)
-  })
-
-  worker.on('error', (err) => {
-    console.error('Worker error:', err)
-  })
-
-  return worker
+): DatabasePoller {
+  const poller = new DatabasePoller(concurrency)
+  poller.start(processor)
+  return poller
 }

@@ -28,6 +28,7 @@ export interface Project {
   audio_url: string
   footage_urls: string[]
   style: string
+  resolution: string
   status: ProjectStatus
   video_url: string | null
   error: string | null
@@ -36,7 +37,9 @@ export interface Project {
   created_at: string
   completed_at: string | null
   user_id: string
-  organization_id: string | null
+  organization_id: string
+  effect_intensity: number
+  footage_visibility: number
 }
 
 export async function updateProjectStatus(

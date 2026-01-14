@@ -1,5 +1,4 @@
-import { Job } from 'bullmq'
-import { GenerationJobData } from '../lib/queue.js'
+import { Job, GenerationJobData } from '../lib/queue.js'
 import { supabase, updateProjectStatus, getProject } from '../lib/supabase.js'
 import { analyzeAudio, detectSubtleCues } from '../lib/audio-analyzer.js'
 import { decryptApiKey, getEncryptionSecret } from '../lib/encryption.js'
@@ -8,8 +7,12 @@ import {
   generateSeed,
   type OrchestrationInput,
   type VisualPlan,
-  type FootageInfo
+  type FootageInfo,
+  type EffectAssignment
 } from '../lib/orchestrator.js'
+import { renderVideo, cleanupRender, type RenderConfig } from '../lib/renderer.js'
+import { createReadStream, statSync, readFileSync } from 'fs'
+import * as tus from 'tus-js-client'
 
 /**
  * Process a video generation job
@@ -77,8 +80,12 @@ export async function processGenerationJob(job: Job<GenerationJobData>) {
     // Fetch footage info if any
     const footageInfo = await getFootageInfo(projectId)
 
-    // Fetch the user's Anthropic API key
-    const anthropicApiKey = await getUserApiKey(project.organization_id, 'anthropic')
+    // Fetch the user's Anthropic API key, fall back to environment variable
+    let anthropicApiKey = await getUserApiKey(project.organization_id, 'anthropic')
+    if (!anthropicApiKey && process.env.ANTHROPIC_API_KEY) {
+      console.log('Using environment ANTHROPIC_API_KEY for AI orchestration')
+      anthropicApiKey = process.env.ANTHROPIC_API_KEY
+    }
 
     const orchestrationInput: OrchestrationInput = {
       audioFeatures,
@@ -113,14 +120,159 @@ export async function processGenerationJob(job: Job<GenerationJobData>) {
     // 4. Render video
     console.log('Rendering video...')
 
-    // For now, simulate rendering
-    // In production with FFmpeg installed, this would call:
-    // const outputPath = await renderVideo(renderConfig, visualPlan, (progress) => {...})
-    await simulateRendering(job, 60, 90)
+    // Build render config
+    const renderConfig: RenderConfig = {
+      projectId,
+      audioUrl: project.audio_url!,
+      audioFeatures,
+      footageUrls: project.footage_urls || [],
+      prompt: project.prompt || '',
+      style: project.style || 'organic',
+      resolution: (project.resolution as '480p' | '720p' | '1080p' | '4K') || '1080p',
+      effectIntensity: project.effect_intensity ?? 0.5,
+      footageVisibility: project.footage_visibility ?? 0.6
+    }
 
-    // 5. Generate video URL (placeholder)
-    // In production, this would upload to Cloudflare R2
-    const videoUrl = `https://placeholder.resonance.app/videos/${projectId}/${seed}.mp4`
+    // Convert orchestrator visual plan to renderer visual plan format
+    const rendererVisualPlan = {
+      segments: visualPlan.segments.map(seg => ({
+        startTime: seg.startTime,
+        endTime: seg.endTime,
+        effects: (seg.effects || []).map(eff => ({
+          effectSlug: eff.effectSlug,
+          ffmpegFilter: getFFmpegFilterForEffect(eff.effectSlug, eff.intensity),
+          parameters: { intensity: eff.intensity }
+        })),
+        footageIndex: seg.footageIndex,
+        generativeType: seg.generativeType as 'particles' | 'waves' | 'geometric' | 'noise' | 'spectrum' | undefined,
+        transitionIn: seg.transition?.type as 'fade' | 'dissolve' | 'wipe' | 'zoom' | 'cut' | undefined
+      })),
+      colorPalette: [visualPlan.colorPalette.primary, visualPlan.colorPalette.secondary, visualPlan.colorPalette.accent],
+      mood: visualPlan.colorPalette.mood,
+      narrative: visualPlan.narrative.theme
+    }
+
+    let outputPath: string
+    try {
+      outputPath = await renderVideo(renderConfig, rendererVisualPlan, (progress) => {
+        const percent = 60 + (progress.percent * 0.3) // 60-90%
+        console.log(`Render: ${progress.stage} (${Math.round(percent)}%)`)
+        job.updateProgress(Math.round(percent))
+      })
+      console.log(`Video rendered to: ${outputPath}`)
+    } catch (renderError) {
+      console.error('Render failed:', renderError)
+      throw new Error(`Video rendering failed: ${renderError instanceof Error ? renderError.message : 'Unknown error'}`)
+    }
+
+    // 5. Upload to Supabase Storage
+    console.log('Uploading video to storage...')
+    const videoFileName = `${projectId}/${seed}.mp4`
+
+    let videoUrl: string
+    try {
+      // Get file stats for content-length
+      const stats = statSync(outputPath)
+      const fileSizeMB = stats.size / 1024 / 1024
+      console.log(`Video file size: ${fileSizeMB.toFixed(2)} MB`)
+
+      const supabaseUrl = process.env.SUPABASE_URL!
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+      // Extract project ref from URL (e.g., https://kjytcjnyowwmcmfudxup.supabase.co -> kjytcjnyowwmcmfudxup)
+      const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1]
+      if (!projectRef) {
+        throw new Error('Could not extract project ref from SUPABASE_URL')
+      }
+
+      // Use resumable upload for files > 6MB (Supabase recommendation)
+      if (fileSizeMB > 6) {
+        console.log('Using resumable upload (TUS protocol) for large file...')
+
+        // Read file as buffer for tus upload
+        const videoBuffer = readFileSync(outputPath)
+
+        // Direct storage hostname for better performance
+        const tusEndpoint = `https://${projectRef}.supabase.co/storage/v1/upload/resumable`
+
+        await new Promise<void>((resolve, reject) => {
+          const upload = new tus.Upload(videoBuffer, {
+            endpoint: tusEndpoint,
+            retryDelays: [0, 3000, 5000, 10000, 20000],
+            chunkSize: 6 * 1024 * 1024, // 6MB chunks as required by Supabase
+            headers: {
+              'Authorization': `Bearer ${serviceKey}`,
+              'x-upsert': 'true'
+            },
+            uploadDataDuringCreation: true,
+            removeFingerprintOnSuccess: true,
+            metadata: {
+              bucketName: 'video-outputs',
+              objectName: videoFileName,
+              contentType: 'video/mp4',
+              cacheControl: '3600'
+            },
+            onError: (error) => {
+              console.error('TUS upload error:', error.message)
+              reject(error)
+            },
+            onProgress: (bytesUploaded, bytesTotal) => {
+              const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(1)
+              console.log(`Upload progress: ${percentage}% (${(bytesUploaded / 1024 / 1024).toFixed(1)}MB / ${(bytesTotal / 1024 / 1024).toFixed(1)}MB)`)
+            },
+            onSuccess: () => {
+              console.log('TUS upload completed successfully')
+              resolve()
+            }
+          })
+
+          // Check for previous uploads and resume if possible
+          upload.findPreviousUploads().then((previousUploads) => {
+            if (previousUploads.length > 0) {
+              console.log('Found previous incomplete upload, resuming...')
+              upload.resumeFromPreviousUpload(previousUploads[0])
+            }
+            upload.start()
+          })
+        })
+      } else {
+        // Use standard upload for small files
+        console.log('Using standard upload for small file...')
+        const videoBuffer = readFileSync(outputPath)
+        const uploadUrl = `${supabaseUrl}/storage/v1/object/video-outputs/${videoFileName}`
+
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${serviceKey}`,
+            'Content-Type': 'video/mp4',
+            'x-upsert': 'true'
+          },
+          body: videoBuffer
+        })
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Upload failed with status ${response.status}: ${errorText}`)
+        }
+        console.log('Standard upload completed successfully')
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('video-outputs')
+        .getPublicUrl(videoFileName)
+
+      videoUrl = urlData.publicUrl
+      console.log(`Video uploaded: ${videoUrl}`)
+
+      // Cleanup temp files
+      cleanupRender(projectId)
+    } catch (uploadError) {
+      console.error('Upload failed:', uploadError)
+      cleanupRender(projectId)
+      throw new Error(`Video upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`)
+    }
 
     await job.updateProgress(95)
 
@@ -218,9 +370,9 @@ function generateFallbackVisualPlan(input: OrchestrationInput): VisualPlan {
   // Create segments from sections or time-based
   const segments = sections.length > 0
     ? sections.map((section, i) => ({
-        startTime: section.start,
-        endTime: section.end,
-        musicalContext: section.type,
+        startTime: section.startTime,
+        endTime: section.endTime,
+        musicalContext: section.type as 'intro' | 'verse' | 'chorus' | 'bridge' | 'outro' | 'instrumental',
         emotionalTone: getEmotionalTone(section.energy),
         description: `${section.type} section`,
         effects: getDefaultEffects(style, section.energy),
@@ -252,8 +404,8 @@ function getEmotionalTone(energy: number): string {
   return 'serene'
 }
 
-function getDefaultEffects(style: string, energy: number) {
-  const effects: Array<{ effectSlug: string; intensity: number; audioSync?: object }> = []
+function getDefaultEffects(style: string, energy: number): EffectAssignment[] {
+  const effects: EffectAssignment[] = []
 
   if (energy > 0.7) {
     effects.push({ effectSlug: 'brightness-contrast', intensity: 0.8 })
@@ -319,21 +471,22 @@ function createTimeBasedSegments(duration: number, style: string, footageCount: 
 }
 
 /**
- * Simulate rendering progress (placeholder until FFmpeg is deployed)
+ * Convert effect slug to FFmpeg filter string
  */
-async function simulateRendering(
-  job: Job,
-  startProgress: number,
-  endProgress: number
-): Promise<void> {
-  const steps = 10
-  const stepSize = (endProgress - startProgress) / steps
-  const stepDuration = 500 // 500ms per step
-
-  for (let i = 0; i < steps; i++) {
-    await new Promise(resolve => setTimeout(resolve, stepDuration))
-    await job.updateProgress(Math.round(startProgress + stepSize * (i + 1)))
+function getFFmpegFilterForEffect(effectSlug: string, intensity: number): string {
+  const filterMap: Record<string, (i: number) => string> = {
+    'brightness-contrast': (i) => `eq=brightness=${0.1 * i}:contrast=${1 + 0.2 * i}`,
+    'hue-rotate': (i) => `hue=h=${360 * i}`,
+    'saturation': (i) => `eq=saturation=${1 + i}`,
+    'vignette': (i) => `vignette=angle=${0.5 * i}`,
+    'grain': (i) => `noise=alls=${Math.round(10 * i)}:allf=t`,
+    'blur': (i) => `gblur=sigma=${5 * i}`,
+    'sharpen': (i) => `unsharp=5:5:${i}`,
+    'glow': (i) => `gblur=sigma=${3 * i},blend=all_mode=screen:all_opacity=${0.3 * i}`,
+    'chromatic-aberration': (i) => `rgbashift=rh=${Math.round(5 * i)}:bh=${Math.round(-5 * i)}`,
   }
+
+  return filterMap[effectSlug]?.(intensity) || ''
 }
 
 /**

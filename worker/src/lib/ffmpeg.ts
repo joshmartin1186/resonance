@@ -245,8 +245,7 @@ export async function downloadFile(url: string, outputPath: string): Promise<voi
 
   const fileStream = createWriteStream(outputPath)
 
-  // @ts-expect-error - Node.js stream compatibility
-  await pipeline(response.body, fileStream)
+  await pipeline(response.body as unknown as NodeJS.ReadableStream, fileStream)
 }
 
 /**
