@@ -145,6 +145,7 @@ export async function processGenerationJob(job: Job<GenerationJobData>) {
         })),
         footageIndex: seg.footageIndex,
         generativeType: seg.generativeType as 'particles' | 'waves' | 'geometric' | 'noise' | 'spectrum' | undefined,
+        shaderType: seg.shaderType as 'perlin-noise' | 'particle-flow' | 'fractal-mandelbrot' | 'voronoi-cells' | 'reaction-diffusion' | undefined,
         transitionIn: seg.transition?.type as 'fade' | 'dissolve' | 'wipe' | 'zoom' | 'cut' | undefined
       })),
       colorPalette: [visualPlan.colorPalette.primary, visualPlan.colorPalette.secondary, visualPlan.colorPalette.accent],
