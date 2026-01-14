@@ -196,16 +196,13 @@ function buildApproximateFilter(
         `eq=brightness=0.1:contrast=${1 + intensity * 0.5}:saturation=${1.5 + intensity}`
 
     case 'fractal-mandelbrot':
-      // Approximate fractal patterns with layered geq (mandelbrot filter is too slow)
-      const fractalComplexity = 20 + intensity * 40
-      const zoom = 1 + intensity * 2
-      const rotation = 'T*50'
+      // Fast psychedelic pattern (complex geq expressions are too slow)
+      const scale = 30 + intensity * 20
       return `nullsrc=s=${width}x${height}:d=${duration}:r=30,` +
-        `geq=lum='128+127*sin((X/${fractalComplexity}+cos(Y/${fractalComplexity*1.5}+${rotation}))*${zoom})*cos((Y/${fractalComplexity}+sin(X/${fractalComplexity*1.5}+${rotation}))*${zoom})':` +
-        `cb='128+${Math.floor(primaryRGB[2] * 100)}*sin(X/${fractalComplexity}+${rotation})':` +
-        `cr='128+${Math.floor(accentRGB[0] * 100)}*cos(Y/${fractalComplexity}+${rotation})',` +
-        `hue=h='${rotation}':s=${1 + intensity},` +
-        `eq=brightness=${intensity * 0.2}`
+        `geq=lum='128+127*sin(X/${scale}+T*2)*cos(Y/${scale}+T*3)':` +
+        `cb='128+${Math.floor(primaryRGB[2] * 100)}*sin(X/${scale*2})':` +
+        `cr='128+${Math.floor(accentRGB[0] * 100)}*cos(Y/${scale*2})',` +
+        `eq=saturation=${1.5 + intensity}:brightness=${intensity * 0.1}`
 
     case 'voronoi-cells':
       // Approximate with cellular patterns using geq

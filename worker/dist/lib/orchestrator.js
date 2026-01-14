@@ -205,16 +205,29 @@ function parseVisualPlan(text) {
  */
 function enhancePlan(plan, input) {
     // Ensure all segments have required fields
-    plan.segments = plan.segments.map((segment, i) => ({
-        ...segment,
-        startTime: segment.startTime ?? 0,
-        endTime: segment.endTime ?? input.audioFeatures.duration,
-        musicalContext: segment.musicalContext || 'verse',
-        emotionalTone: segment.emotionalTone || 'neutral',
-        description: segment.description || `Segment ${i + 1}`,
-        effects: segment.effects || [],
-        transition: segment.transition || { type: 'fade', duration: 0.5 }
-    }));
+    plan.segments = plan.segments.map((segment, i) => {
+        // Extract shaderType from effects array if Claude put it there
+        let shaderType = segment.shaderType;
+        if (!shaderType && segment.effects) {
+            const shaderEffect = segment.effects.find((eff) => eff.type === 'shaderType' &&
+                ['perlin-noise', 'particle-flow', 'fractal-mandelbrot', 'voronoi-cells', 'reaction-diffusion'].includes(eff.name));
+            if (shaderEffect) {
+                shaderType = shaderEffect.name;
+                console.log(`[Orchestrator] Extracted shaderType: ${shaderType} from effects for segment ${i}`);
+            }
+        }
+        return {
+            ...segment,
+            startTime: segment.startTime ?? 0,
+            endTime: segment.endTime ?? input.audioFeatures.duration,
+            musicalContext: segment.musicalContext || 'verse',
+            emotionalTone: segment.emotionalTone || 'neutral',
+            description: segment.description || `Segment ${i + 1}`,
+            effects: segment.effects || [],
+            shaderType, // Add extracted shaderType
+            transition: segment.transition || { type: 'fade', duration: 0.5 }
+        };
+    });
     // Ensure color palette
     plan.colorPalette = plan.colorPalette || {
         primary: '#C45D3A',
