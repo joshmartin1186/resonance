@@ -1,21 +1,22 @@
 # Resonance Project Status
 
-**Last Updated:** 2026-01-14 10:45 AM PST
+**Last Updated:** 2026-01-14 2:30 PM PST
 
 ## Project Overview
 
 Resonance is an AI-powered music visualization platform that generates cinematic visuals from audio. Users upload music, and the system analyzes it to create synchronized video content.
 
-## Current State: MVP Functional
+## Current State: Advanced Generative System
 
-The core pipeline is working end-to-end:
+The core pipeline is working end-to-end with sophisticated procedural graphics:
 1. Audio upload and analysis
 2. AI-powered visual planning (Claude)
-3. FFmpeg-based video rendering
-4. Large file upload to Supabase Storage
-5. Video playback in dashboard
+3. **NEW: Advanced GLSL shader system for TouchDesigner-level visuals**
+4. FFmpeg-based video rendering with audio-reactive parameters
+5. Large file upload to Supabase Storage (TUS protocol)
+6. Video playback in dashboard
 
-## Recent Fixes (2026-01-14)
+## Recent Updates (2026-01-14)
 
 ### 1. FFmpeg geq Filter Error (FIXED)
 **Problem:** ffmpeg 8.0 rejected `if(mod(...))` conditional expressions in geq filters.
@@ -32,7 +33,7 @@ geq=lum='if(mod(X+Y+T*100,100)<50,200,50)':cb=128:cr=128
 geq=lum='128+127*sin(X/30+T*2)*cos(Y/30+T*3)':cb='${cb}+30*sin(X/100)':cr='${cr}+30*cos(Y/100)'
 ```
 
-### 2. Supabase Storage Upload EPIPE Error (FIXED)
+### 2. Supabase Storage Upload EPIPE Error (FIXED - Session 1)
 **Problem:** Large video files (100MB+) failed with EPIPE error using standard fetch upload.
 ```
 TypeError: fetch failed { [cause]: Error: write EPIPE }
@@ -130,9 +131,12 @@ Key tables:
 
 ## Known Issues / TODO
 
-1. **Middleware deprecation warning** - Next.js 16 warns about middleware convention
-2. **Video file sizes** - Currently generating large files (400MB+ for 84s video), consider compression optimization
-3. **Progress UI** - Could improve real-time progress feedback in dashboard
+1. **Native GLSL Rendering** - Build custom FFmpeg with OpenGL filter for true GPU shader execution (currently using approximations)
+2. **Shader Composition** - Layer multiple shaders for hybrid effects
+3. **Real-time Audio Reactivity** - Extract actual FFT frequency bands instead of approximations
+4. **Video file sizes** - Currently generating large files (400MB+ for 84s video), consider compression optimization
+5. **Progress UI** - Could improve real-time progress feedback in dashboard
+6. **Middleware deprecation warning** - Next.js 16 warns about middleware convention
 
 ## Tech Stack
 
