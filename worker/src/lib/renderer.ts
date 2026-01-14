@@ -116,8 +116,8 @@ export async function renderVideo(
           segment,
           config
         )
-      } else if (segment.generativeType) {
-        // Generate procedural content with colors
+      } else if (segment.generativeType || segment.shaderType) {
+        // Generate procedural content with shaders or legacy generative patterns
         await generateProceduralSegment(
           segmentPath,
           segment,
@@ -221,8 +221,11 @@ async function generateProceduralSegment(
   // Use sophisticated shader system if shaderType is specified
   let filter: string
 
+  console.log(`[DEBUG] Segment shaderType: ${segment.shaderType}, generativeType: ${segment.generativeType}`)
+
   if (segment.shaderType) {
     // NEW: Use sophisticated GLSL-approximated shaders
+    console.log(`[DEBUG] Using shader: ${segment.shaderType}`)
     filter = buildShaderFilter({
       type: segment.shaderType,
       duration,
