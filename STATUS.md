@@ -1,17 +1,18 @@
 # Resonance - Task Queue
 
-**Last Updated:** 2026-01-13 by Claude.ai
-**Current Phase:** 5 - AI Orchestration (Issues #17-19)
+**Last Updated:** 2026-01-16 by Claude Code
+**Current Phase:** 6 - RunPod GPU Worker Deployment
 
 ---
 
 ## 📋 TASK QUEUE (Claude Code: Build These)
 
 ### Next Up
-- Deploy worker to Railway/Render
-- Set up Redis (Upstash)
-- Run migrations in Supabase (effects + api_keys)
-- Phase 6: User Feedback & Iteration
+- [ ] Test RunPod endpoint with sample generation (waiting on build to complete)
+- [ ] Integrate RunPod API into Next.js app
+- [ ] Add worker selection (local vs RunPod) to dashboard
+- [ ] Set up Redis (Upstash) for production queue
+- [ ] Phase 7: User Feedback & Iteration
 
 ---
 
@@ -26,6 +27,23 @@
 ---
 
 ## ✅ COMPLETED
+
+### 2026-01-16 (Claude Code) - Phase 6 RunPod GPU Worker Deployment
+- [x] Diagnosed black screen issue: headless-gl doesn't work on Mac ARM
+- [x] Researched GPU cloud solutions (RunPod selected at ~$0.20/hr for RTX 3090)
+- [x] Created RunPod serverless endpoint connected to GitHub repo
+- [x] Built multi-stage Dockerfile with native module compilation
+- [x] Fixed Docker build errors (Alpine → Debian bullseye for build tools)
+- [x] Added python-is-python3 to both builder and runner stages
+- [x] Added complete OpenGL/Mesa dependencies for GPU rendering
+- [x] Created runpod-handler.ts for serverless job processing
+- [x] Created runpod-start.ts HTTP server for RunPod execution model
+- [x] Updated Dockerfile to use runpod-start.js and expose port 8000
+- [x] Created test-runpod.js for endpoint testing with env var security
+- [x] Pushed all changes to GitHub (commit: 69ea0d7)
+- [x] RunPod building Docker image from GitHub (IN PROGRESS)
+
+**Next:** Test endpoint once build completes, verify GPU rendering produces color (not black screens)
 
 ### 2026-01-13 (Claude Code) - User API Keys System
 - [x] Created database migration for user_api_keys table
@@ -150,6 +168,7 @@ git add -A && git commit -m "msg" && git push  # 6. Push when clean
 | Blocker | Waiting On | Added |
 |---------|------------|-------|
 | Stripe products needed | Josh to create in Stripe Dashboard | 2026-01-13 |
+| RunPod worker testing | RunPod Docker build to complete | 2026-01-16 |
 
 ---
 
@@ -196,3 +215,16 @@ git add -A && git commit -m "msg" && git push  # 6. Push when clean
 | #17 | Claude API integration | ✅ Done |
 | #18 | Visual plan generator | ✅ Done |
 | #19 | Seed system | ✅ Done |
+
+## 📊 PHASE 6 PROGRESS - RunPod GPU Deployment
+
+| Task | Status |
+|------|--------|
+| Diagnose black screen rendering issue | ✅ Done |
+| Select GPU cloud provider (RunPod) | ✅ Done |
+| Create Dockerfile with GPU support | ✅ Done |
+| Fix Docker build errors (python, OpenGL) | ✅ Done |
+| Create RunPod serverless handler | ✅ Done |
+| Push to GitHub and trigger build | ✅ Done |
+| Test RunPod endpoint | ⏳ Waiting on build |
+| Integrate RunPod into Next.js app | 🔜 Next |
