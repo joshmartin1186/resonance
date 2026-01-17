@@ -1,0 +1,41 @@
+# RunPod Serverless GPU Configuration
+# Deploy: https://www.runpod.io/serverless
+
+name: resonance-worker
+description: GPU-accelerated music visualization video renderer
+
+# Container configuration
+container:
+  image: your-dockerhub-username/resonance-worker:latest
+
+# GPU requirements
+gpu:
+  type: RTX3090  # Cheapest option at ~$0.20/hour
+  count: 1
+  memory: 24GB
+
+# Resource limits
+resources:
+  cpu: 8
+  memory: 32GB
+  disk: 50GB
+
+# Scaling configuration
+scaling:
+  min_workers: 0  # Scale to zero when idle
+  max_workers: 10 # Scale up as needed
+  idle_timeout: 300  # Seconds before scaling down
+
+# Environment variables (set these in RunPod dashboard)
+env:
+  - NEXT_PUBLIC_SUPABASE_URL
+  - SUPABASE_SERVICE_ROLE_KEY
+  - ANTHROPIC_API_KEY  # For AI orchestration
+
+# Handler configuration
+handler:
+  endpoint: /api/generate
+  timeout: 600  # 10 minutes max per job
+
+# Webhook for job completion (optional)
+# webhook_url: https://your-app.vercel.app/api/webhook/render-complete

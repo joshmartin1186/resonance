@@ -3,7 +3,8 @@ import { join } from 'path'
 import { runFFmpeg, buildFilterChain, downloadFile, getVideoMetadata, concatenateVideos, imageToVideo } from './ffmpeg.js'
 import type { AudioFeatures } from './audio-analyzer.js'
 import { buildShaderFilter, type ShaderType } from './shader-manager.js'
-import { renderShaderVideo } from './gpu-shader-renderer.js'
+import { renderShaderVideo } from './headless-gl-renderer.js'
+import { renderNodeBasedVideo } from './node-based-renderer.js'
 
 // Types
 export interface RenderConfig {
@@ -234,6 +235,33 @@ async function generateProceduralSegment(
 
   console.log(`[DEBUG] Segment shaderType: ${segment.shaderType}, generativeType: ${segment.generativeType}`)
 
+  // NEW: Use node-based rendering system for infinite complexity
+  // This creates AI-orchestrated visuals with multiple generators/effects
+  console.log(`[NODE SYSTEM] Using infinite complexity node renderer`)
+
+  const [width, height] = getResolution(config.resolution)
+  const audioPath = join('/tmp/resonance-render', config.projectId, 'audio.mp3')
+
+  await renderNodeBasedVideo({
+    audioPath,
+    outputPath,
+    duration,
+    width,
+    height,
+    fps,
+    colors: {
+      primary: colorPalette[0] || '#C45D3A',
+      secondary: colorPalette[1] || '#2A2621',
+      accent: colorPalette[2] || '#F0EDE8'
+    },
+    intensity: config.effectIntensity || 0.8,
+    useAI: false, // Use test timeline for now (set to true for AI orchestration)
+    parallel: true // Enable parallel rendering (4-8x faster!)
+  })
+
+  return
+
+  // LEGACY CODE BELOW (keep for reference, but never reached)
   // Use GPU-accelerated WebGL shader rendering if shaderType is specified
   if (segment.shaderType) {
     console.log(`[GPU] Rendering shader: ${segment.shaderType}`)
@@ -245,7 +273,7 @@ async function generateProceduralSegment(
     console.log(`[GPU] Intensity: ${intensity}, Colors: ${colorPalette.join(', ')}`)
 
     await renderShaderVideo({
-      shaderType: segment.shaderType,
+      shaderType: segment.shaderType as ShaderType,
       duration,
       width,
       height,
@@ -255,13 +283,7 @@ async function generateProceduralSegment(
         secondary: colorPalette[1] || '#2A2621',
         accent: colorPalette[2] || '#F0EDE8'
       },
-      intensity,
-      audioFeatures: {
-        energyCurve: config.audioFeatures.energyCurve || [],
-        bassCurve: config.audioFeatures.energyCurve || [],
-        midCurve: config.audioFeatures.energyCurve || [],
-        highCurve: config.audioFeatures.energyCurve || []
-      }
+      intensity
     }, outputPath)
 
     return

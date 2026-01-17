@@ -47,7 +47,7 @@ export async function renderShaderVideo(
   console.log(`[GPU Shader] Rendering ${totalFrames} frames at ${width}x${height}...`);
 
   const html = generateShaderHTML(config);
-  const RESTART_INTERVAL = 50; // Restart browser every 50 frames to prevent crashes
+  const RESTART_INTERVAL = 15; // Restart browser every 15 frames to prevent crashes on Mac
 
   let browser = null;
   let page = null;
@@ -102,6 +102,10 @@ export async function renderShaderVideo(
       const time = frame / fps;
 
       try {
+        if (!page) {
+          throw new Error('Browser page not initialized');
+        }
+
         // Update shader uniforms
         await page.evaluate((t: number) => {
           // @ts-ignore - window.updateShaderTime is defined in the injected HTML

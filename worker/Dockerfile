@@ -16,33 +16,34 @@ COPY src ./src
 # Build TypeScript
 RUN npm run build
 
-# Production stage
-FROM node:20-bullseye-slim AS runner
+# Production stage - RunPod GPU-optimized
+FROM node:20-bullseye AS runner
 
 WORKDIR /app
 
-# Install Chromium, FFmpeg, and WebGL dependencies for headless GPU rendering
+# Install FFmpeg, OpenGL/Mesa for GPU rendering, and build dependencies for native modules
 RUN apt-get update && apt-get install -y \
-    chromium \
     ffmpeg \
-    libgbm-dev \
-    libnss3 \
-    libxss1 \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libgtk-3-0 \
-    libdrm2 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libgbm1 \
-    libpango-1.0-0 \
-    libcairo2 \
+    mesa-utils \
+    libgl1-mesa-glx \
+    libgl1-mesa-dri \
+    libglu1-mesa \
+    libglew-dev \
+    libglfw3-dev \
+    libxi-dev \
+    libxrandr-dev \
+    libxinerama-dev \
+    libxcursor-dev \
+    libxxf86vm-dev \
+    build-essential \
+    python3 \
+    make \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Configure Puppeteer to use system Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+# Set up GPU rendering environment
+ENV LIBGL_ALWAYS_SOFTWARE=0
+ENV MESA_GL_VERSION_OVERRIDE=3.3
 
 # Copy package files and install production dependencies only
 COPY package*.json ./
