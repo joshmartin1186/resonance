@@ -3,15 +3,15 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy worker package files only
+COPY worker/package*.json ./
 
 # Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY tsconfig.json ./
-COPY src ./src
+# Copy worker source code only
+COPY worker/tsconfig.json ./
+COPY worker/src ./src
 
 # Build TypeScript
 RUN npm run build
@@ -46,7 +46,7 @@ ENV LIBGL_ALWAYS_SOFTWARE=0
 ENV MESA_GL_VERSION_OVERRIDE=3.3
 
 # Copy package files and install production dependencies only
-COPY package*.json ./
+COPY worker/package*.json ./
 RUN npm ci --omit=dev
 
 # Copy built files from builder
