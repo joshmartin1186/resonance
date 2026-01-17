@@ -3,10 +3,11 @@ FROM node:20-bullseye AS builder
 
 WORKDIR /app
 
-# Install build dependencies for native modules (canvas, etc.)
+# Install build dependencies for native modules (canvas, gl, etc.)
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3 \
+    python-is-python3 \
     make \
     g++ \
     libcairo2-dev \
@@ -14,6 +15,11 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libgif-dev \
     librsvg2-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libxi-dev \
+    libglfw3-dev \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy worker package files only
