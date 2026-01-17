@@ -75,5 +75,8 @@ COPY --from=builder /app/dist ./dist
 # Set environment
 ENV NODE_ENV=production
 
-# Run the worker
-CMD ["node", "dist/index.js"]
+# Expose port for RunPod
+EXPOSE 8000
+
+# Run the RunPod serverless handler
+CMD ["node", "dist/runpod-start.js"]
